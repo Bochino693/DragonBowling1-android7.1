@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Aparelhos USB que o Dragon Bowling assume sozinho: o Arduino dos LEDs e
+  os conversores seriais (CH340, FTDI, CP210x, PL2303). Com isto o Android
+  mostra, no primeiro encaixe, a caixa "Usar por padrão". Marcada uma vez,
+  a permissão fica guardada e não é pedida de novo.
+  A placa Zero Delay dos botões NÃO entra aqui: ela é teclado/joystick e
+  não precisa de permissão nenhuma.
+-->
+<resources>
+    <usb-device vendor-id="9025" />        <!-- 0x2341 Arduino -->
+    <usb-device vendor-id="10755" />       <!-- 0x2A03 Arduino.org -->
+    <usb-device vendor-id="6790" />        <!-- 0x1A86 CH340/CH341 -->
+    <usb-device vendor-id="1027" />        <!-- 0x0403 FTDI -->
+    <usb-device vendor-id="4292" />        <!-- 0x10C4 Silicon Labs CP210x -->
+    <usb-device vendor-id="1659" />        <!-- 0x067B Prolific PL2303 -->
+    <usb-device vendor-id="17224" />       <!-- 0x4348 WCH (CH340 antigo) -->
+    <usb-device class="2" />               <!-- qualquer CDC/ACM (Arduino USB nativo) -->
+</resources>

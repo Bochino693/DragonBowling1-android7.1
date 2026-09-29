@@ -1,0 +1,102 @@
+[gd_scene load_steps=23 format=2]
+
+[ext_resource path="res://scripts/bola.gd" type="Script" id=1]
+[ext_resource path="res://sprites/WhatsApp_Image_2026-03-17_at_15.48.06-removebg-preview.png" type="Texture" id=2]
+[ext_resource path="res://sprites/balllss.jpg" type="Texture" id=3]
+[ext_resource path="res://sprites/ball-t-removebg-preview.png" type="Texture" id=4]
+
+[sub_resource type="AtlasTexture" id=1]
+atlas = ExtResource( 2 )
+region = Rect2(0, 0, 306, 204)
+
+[sub_resource type="AtlasTexture" id=2]
+atlas = ExtResource( 3 )
+region = Rect2(0, 0, 316, 421)
+
+[sub_resource type="AtlasTexture" id=3]
+atlas = ExtResource( 3 )
+region = Rect2(316, 0, 316, 421)
+
+[sub_resource type="AtlasTexture" id=4]
+atlas = ExtResource( 3 )
+region = Rect2(632, 0, 316, 421)
+
+[sub_resource type="AtlasTexture" id=5]
+atlas = ExtResource( 3 )
+region = Rect2(948, 0, 316, 421)
+
+[sub_resource type="AtlasTexture" id=6]
+atlas = ExtResource( 3 )
+region = Rect2(0, 421, 316, 421)
+
+[sub_resource type="AtlasTexture" id=7]
+atlas = ExtResource( 3 )
+region = Rect2(316, 421, 316, 421)
+
+[sub_resource type="AtlasTexture" id=8]
+atlas = ExtResource( 3 )
+region = Rect2(632, 421, 316, 421)
+
+[sub_resource type="AtlasTexture" id=9]
+atlas = ExtResource( 3 )
+region = Rect2(948, 421, 316, 421)
+
+[sub_resource type="AtlasTexture" id=10]
+atlas = ExtResource( 4 )
+region = Rect2(0, 0, 153, 204)
+
+[sub_resource type="AtlasTexture" id=11]
+atlas = ExtResource( 4 )
+region = Rect2(153, 0, 153, 204)
+
+[sub_resource type="AtlasTexture" id=12]
+atlas = ExtResource( 4 )
+region = Rect2(306, 0, 153, 204)
+
+[sub_resource type="AtlasTexture" id=13]
+atlas = ExtResource( 4 )
+region = Rect2(459, 0, 153, 204)
+
+[sub_resource type="AtlasTexture" id=14]
+atlas = ExtResource( 4 )
+region = Rect2(0, 204, 153, 204)
+
+[sub_resource type="AtlasTexture" id=15]
+atlas = ExtResource( 4 )
+region = Rect2(153, 204, 153, 204)
+
+[sub_resource type="AtlasTexture" id=16]
+atlas = ExtResource( 4 )
+region = Rect2(306, 204, 153, 204)
+
+[sub_resource type="AtlasTexture" id=17]
+atlas = ExtResource( 4 )
+region = Rect2(459, 204, 153, 204)
+
+[sub_resource type="SpriteFrames" id=18]
+animations = [ {
+"frames": [ SubResource( 1 ) ],
+"loop": true,
+"name": "idle",
+"speed": 5.0
+}, {
+"frames": [ SubResource( 2 ), SubResource( 3 ), SubResource( 4 ), SubResource( 5 ), SubResource( 6 ), SubResource( 7 ), SubResource( 8 ), SubResource( 9 ) ],
+"loop": true,
+"name": "new_animation",
+"speed": 5.0
+}, {
+"frames": [ SubResource( 10 ), SubResource( 11 ), SubResource( 12 ), SubResource( 13 ), SubResource( 14 ), SubResource( 15 ), SubResource( 16 ), SubResource( 17 ) ],
+"loop": true,
+"name": "roll",
+"speed": 27.0
+} ]
+
+[node name="Bola" type="Node2D"]
+position = Vector2(236, 237)
+script = ExtResource( 1 )
+
+[node name="AnimatedSprite2D" type="AnimatedSprite" parent="."]
+position = Vector2(3.8146973e-06, -1.9073486e-06)
+scale = Vector2(0.6078431, 0.7696079)
+frames = SubResource( 18 )
+animation = "roll"

@@ -1,0 +1,13 @@
+# Godot 3.6 (versão S905L): cache de importação e o modelo Android que o
+# GERAR_APK extrai no PC.
+.import/
+/android/build/
+/android/.build_version
+# Saídas de build e arquivos gerados na máquina
+/build/
+/APK-Pronto/
+*.apk
+*.idsig
+/logs/
+/sobras_de_versoes_antigas/
+tools/__pycache__/

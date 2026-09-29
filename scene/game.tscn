@@ -1,0 +1,171 @@
+[gd_scene load_steps=9 format=2]
+
+[ext_resource path="res://scripts/game.gd" type="Script" id=1]
+[ext_resource path="res://entities/pino.tscn" type="PackedScene" id=2]
+[ext_resource path="res://sprites/ball-new.png" type="Texture" id=3]
+[ext_resource path="res://entities/bola.tscn" type="PackedScene" id=4]
+
+[sub_resource type="SpriteFrames" id=1]
+
+[sub_resource type="RectangleShape2D" id=2]
+
+[sub_resource type="PhysicsMaterial" id=3]
+
+[sub_resource type="RectangleShape2D" id=4]
+
+[node name="Game" type="Node2D"]
+script = ExtResource( 1 )
+pino_scene = ExtResource( 2 )
+
+[node name="ParallaxBackground" type="ParallaxBackground" parent="."]
+
+[node name="pista" type="ParallaxLayer" parent="ParallaxBackground"]
+
+[node name="Sprite" type="Sprite" parent="ParallaxBackground/pista"]
+texture = ExtResource( 3 )
+centered = false
+
+[node name="AnimatedSprite2D" type="AnimatedSprite" parent="ParallaxBackground/pista"]
+frames = SubResource( 1 )
+
+[node name="Pins" type="Node2D" parent="."]
+
+[node name="Pino9" parent="Pins" instance=ExtResource( 2 )]
+position = Vector2(40, 120)
+
+[node name="StaticBody2D" type="StaticBody2D" parent="Pins/Pino9"]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Pins/Pino9/StaticBody2D"]
+shape = SubResource( 2 )
+
+[node name="Pino10" parent="Pins" instance=ExtResource( 2 )]
+position = Vector2(412, 417)
+
+[node name="StaticBody2D" type="StaticBody2D" parent="Pins/Pino10"]
+position = Vector2(-410, -421)
+physics_material_override = SubResource( 3 )
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Pins/Pino10/StaticBody2D"]
+shape = SubResource( 4 )
+
+[node name="Pino2" parent="Pins" instance=ExtResource( 2 )]
+position = Vector2(-40, 40)
+
+[node name="StaticBody2D" type="StaticBody2D" parent="Pins/Pino2"]
+position = Vector2(-410, -421)
+physics_material_override = SubResource( 3 )
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Pins/Pino2/StaticBody2D"]
+shape = SubResource( 4 )
+
+[node name="Pino" parent="Pins" instance=ExtResource( 2 )]
+position = Vector2(583, 435)
+
+[node name="StaticBody2D" type="StaticBody2D" parent="Pins/Pino"]
+position = Vector2(-410, -421)
+physics_material_override = SubResource( 3 )
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Pins/Pino/StaticBody2D"]
+shape = SubResource( 4 )
+
+[node name="Pino7" parent="Pins" instance=ExtResource( 2 )]
+position = Vector2(-120, 120)
+
+[node name="StaticBody2D" type="StaticBody2D" parent="Pins/Pino7"]
+position = Vector2(-410, -421)
+physics_material_override = SubResource( 3 )
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Pins/Pino7/StaticBody2D"]
+shape = SubResource( 4 )
+
+[node name="Pino3" parent="Pins" instance=ExtResource( 2 )]
+position = Vector2(40, 40)
+
+[node name="StaticBody2D" type="StaticBody2D" parent="Pins/Pino3"]
+position = Vector2(-410, -421)
+physics_material_override = SubResource( 3 )
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Pins/Pino3/StaticBody2D"]
+shape = SubResource( 4 )
+
+[node name="Pino4" parent="Pins" instance=ExtResource( 2 )]
+position = Vector2(-80, 80)
+
+[node name="StaticBody2D" type="StaticBody2D" parent="Pins/Pino4"]
+position = Vector2(-410, -421)
+physics_material_override = SubResource( 3 )
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Pins/Pino4/StaticBody2D"]
+shape = SubResource( 4 )
+
+[node name="Pino5" parent="Pins" instance=ExtResource( 2 )]
+position = Vector2(0, 80)
+
+[node name="StaticBody2D" type="StaticBody2D" parent="Pins/Pino5"]
+position = Vector2(-410, -421)
+physics_material_override = SubResource( 3 )
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Pins/Pino5/StaticBody2D"]
+shape = SubResource( 4 )
+
+[node name="Pino6" parent="Pins" instance=ExtResource( 2 )]
+position = Vector2(80, 80)
+
+[node name="StaticBody2D" type="StaticBody2D" parent="Pins/Pino6"]
+position = Vector2(-410, -421)
+physics_material_override = SubResource( 3 )
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Pins/Pino6/StaticBody2D"]
+shape = SubResource( 4 )
+
+[node name="Pino8" parent="Pins" instance=ExtResource( 2 )]
+position = Vector2(-40, 120)
+
+[node name="StaticBody2D" type="StaticBody2D" parent="Pins/Pino8"]
+position = Vector2(-410, -421)
+physics_material_override = SubResource( 3 )
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Pins/Pino8/StaticBody2D"]
+shape = SubResource( 4 )
+
+[node name="Bola" parent="." instance=ExtResource( 4 )]
+
+[node name="Camera2D" type="Camera2D" parent="."]
+
+[node name="Hud" type="CanvasLayer" parent="."]
+
+[node name="MapaPanel" type="ColorRect" parent="Hud"]
+margin_right = 40.0
+margin_bottom = 40.0
+
+[node name="StatusPanel" type="ColorRect" parent="Hud"]
+margin_right = 40.0
+margin_bottom = 40.0
+
+[node name="TopPanel" type="ColorRect" parent="Hud"]
+margin_right = 40.0
+margin_bottom = 40.0
+
+[node name="HudPanel" type="ColorRect" parent="Hud"]
+margin_right = 40.0
+margin_bottom = 40.0
+
+[node name="StatusLabel" type="Label" parent="Hud"]
+margin_right = 40.0
+margin_bottom = 23.0
+
+[node name="BannerLabel" type="Label" parent="Hud"]
+margin_right = 40.0
+margin_bottom = 23.0
+
+[node name="RoundLabel" type="Label" parent="Hud"]
+margin_right = 40.0
+margin_bottom = 23.0
+
+[node name="Placar" type="Label" parent="Hud"]
+margin_right = 40.0
+margin_bottom = 23.0
+
+[node name="MapaLabel" type="Label" parent="Hud"]
+margin_right = 40.0
+margin_bottom = 23.0
