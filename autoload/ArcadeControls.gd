@@ -27,7 +27,7 @@ const SEQUENCIA: Array = [
 	["input_v", "TRIÂNGULO  ·  MEIO DIREITO"],
 	["input_b", "R1  ·  JOGADAS EXTREMAS"],
 	["input_credit", "SELECT  ·  CRÉDITO"],
-	["input_teste", "R2  ·  CONFIGURAÇÃO (ABRE E FECHA)"],
+	["input_teste", "R2  ·  CONFIGURAÇÃO"],
 ]
 ## Os primeiros são obrigatórios; SELECT e R2 podem ser pulados (a
 ## máquina pode não ter esses botões ligados).

@@ -1,4 +1,4 @@
-DRAGON BOWLING - VERSAO TV BOX S905L (ANDROID 7.1) - BUILD 3
+DRAGON BOWLING - VERSAO TV BOX S905L (ANDROID 7.1) - BUILD 4
 ============================================================
 
 PARA QUAL MAQUINA E ESTA VERSAO
@@ -45,6 +45,19 @@ partida, abre a tela de configurar os botoes; apertando o R2 de novo la
 dentro, ela FECHA sem mudar nada. Se algum botao cair na funcao errada:
 abra com o R2 (ou SEGURE qualquer botao da placa 10 segundos no menu) e
 aperte na ordem pedida. Fica gravado na TV Box.
+
+BORDA PRETA EM VOLTA DA IMAGEM
+------------------------------
+O jogo ocupa a tela inteira que o Android entrega (conferido a 1920x1080
+com a imagem girada). Para ver de onde vem uma borda: aperte R2 e olhe a
+MOLDURA VERDE da tela de configuracao, que fica exatamente na borda da
+imagem do jogo, e a linha "TELA: JOGO ... ANDROID ...".
+- Preto POR FORA da moldura verde: a borda vem da TV Box (a imagem
+  inteira do Android sai reduzida no HDMI). Na TV Box: Configuracoes >
+  Tela (Display) > Posicao da tela / Zoom da tela (Screen position) =
+  100%. Vale para todos os aplicativos e fica gravado.
+- Se a TV ainda mostrar borda: formato de imagem da TV em "Ajustar a
+  tela" / "Just Scan" / "Pixel a pixel" (ou o modo personalizado).
 
 LEDS (ARDUINO)
 --------------

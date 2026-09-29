@@ -51,8 +51,30 @@ func _ready() -> void:
 		y += 78.0
 
 	_rodape = _rotulo(fonte, "", Vector2(0, 1380), 24, Color(1, 1, 1, 0.5))
+	_medidor_de_tela(fonte)
 	_ultimo_toque_ms = Time.get_ticks_msec()
 	_atualizar()
+
+
+## MEDIDOR DA TELA CHEIA. A moldura verde fica EXATAMENTE na borda da
+## imagem do jogo. Se na TV aparecer preto POR FORA da moldura, a borda
+## vem da TV Box (ajuste de posição/zoom da tela) ou da TV, não do jogo.
+## A linha de baixo mostra o tamanho que o Android entrega ao jogo e o da
+## tela inteira: iguais = o jogo já ocupa tudo o que o Android deixa.
+func _medidor_de_tela(fonte: Font) -> void:
+	var cor := Color(0.2, 1.0, 0.35)
+	var g := 6.0
+	var t: Vector2 = Tela.TAMANHO
+	for r in [Rect2(0, 0, t.x, g), Rect2(0, t.y - g, t.x, g), Rect2(0, 0, g, t.y), Rect2(t.x - g, 0, g, t.y)]:
+		var faixa := ColorRect.new()
+		faixa.color = cor
+		faixa.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		faixa.rect_position = r.position
+		faixa.rect_size = r.size
+		add_child(faixa)
+	var area: Rect2 = OS.get_window_safe_area()
+	var texto = "TELA: JOGO %dx%d  ·  ANDROID %dx%d" % [OS.window_size.x, OS.window_size.y, area.size.x, area.size.y]
+	_rotulo(fonte, texto, Vector2(0, 1440), 22, Color(0.55, 1.0, 0.65, 0.85))
 
 
 func _rotulo(fonte: Font, texto: String, pos: Vector2, tamanho: int, cor: Color) -> Label:

@@ -13,7 +13,7 @@ Set-Location $Raiz
 # (DRAGON_BUILD=...): se a pasta tiver arquivos de builds diferentes
 # misturados (zip novo extraido por cima de um velho), a geracao para aqui,
 # antes de fazer qualquer coisa.
-$Build = 3
+$Build = 4
 $VersaoGodot = "3.6.2"
 $VersaoModelos = "3.6.2.stable"
 $UrlBase = "https://github.com/godotengine/godot/releases/download/3.6.2-stable"
@@ -389,6 +389,13 @@ public class GodotApp extends FullScreenGodotApp {
 	}
 
 	private void telaCheia() {
+		// Reafirma a janela na tela inteira (inclusive a area de overscan)
+		// toda vez que o jogo volta ao primeiro plano.
+		getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN
+				| WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN
+				| WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
+				| WindowManager.LayoutParams.FLAG_LAYOUT_IN_OVERSCAN);
+		getWindow().setLayout(WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.MATCH_PARENT);
 		getWindow().getDecorView().setSystemUiVisibility(TELA_CHEIA);
 	}
 }
