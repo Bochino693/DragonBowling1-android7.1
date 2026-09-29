@@ -1,6 +1,6 @@
 @echo off
 setlocal
-rem DRAGON_BUILD=2
+rem DRAGON_BUILD=3
 rem Script interno: quem chama e o GERAR_APK_AGORA.bat (na raiz), pelo
 rem GERAR_APK_COMPLETO.ps1, que ja deixa o Godot 3.6.2, o modelo Android, o
 rem plugin USB, o Java e a chave de assinatura prontos.

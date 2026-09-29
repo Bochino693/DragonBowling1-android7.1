@@ -1,4 +1,4 @@
-DRAGON BOWLING - VERSAO TV BOX S905L (ANDROID 7.1) - BUILD 2
+DRAGON BOWLING - VERSAO TV BOX S905L (ANDROID 7.1) - BUILD 3
 ============================================================
 
 PARA QUAL MAQUINA E ESTA VERSAO
@@ -39,8 +39,11 @@ Pro Ultra).
 BOTOES (ZERO DELAY)
 -------------------
 Iguais aos da Pro Ultra: STR = 1/Espaco, Quadrado = A, X = S, Bolinha = D,
-Triangulo = F, R1 = G, SELECT = 5, L3 = 9. Se algum botao cair na funcao
-errada: no menu, SEGURE qualquer botao da placa 10 segundos (ou L3) e
+Triangulo = F, R1 = G, SELECT = 5.
+CONFIGURACAO: R2. Apertando o R2 na abertura, no menu, na demo ou na
+partida, abre a tela de configurar os botoes; apertando o R2 de novo la
+dentro, ela FECHA sem mudar nada. Se algum botao cair na funcao errada:
+abra com o R2 (ou SEGURE qualquer botao da placa 10 segundos no menu) e
 aperte na ordem pedida. Fica gravado na TV Box.
 
 LEDS (ARDUINO)

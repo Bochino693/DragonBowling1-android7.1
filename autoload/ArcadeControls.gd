@@ -4,11 +4,12 @@ extends Node
 ##
 ## Sem mapeamento gravado, vale o Input Map do projeto: as teclas da Zero
 ## Delay no modo teclado (1/Espaço = STR, A = quadrado, S = X, D = bolinha,
-## F = triângulo, G = R1, 5 = SELECT, 9 = L3) e os índices de joystick.
+## F = triângulo, G = R1, 5 = SELECT, 9 = configuração) e os índices de
+## joystick.
 ## As ações "ui_*" do Godot (ENTER, setas, botão 0) são desligadas.
 ##
 ## MAPEAMENTO GRAVADO NA TV BOX. O Android numera os botões da placa de
-## outro jeito que o Windows. Na tela de CONFIGURAÇÃO (L3, ou segurar
+## outro jeito que o Windows. Na tela de CONFIGURAÇÃO (R2, ou segurar
 ## qualquer botão da placa por 5 segundos no menu) o jogo pede um botão
 ## de cada vez, na sequência, e grava em user://controles_zero_delay.cfg.
 ## A placa vale do jeito que ela se apresentar ao Android: como joystick
@@ -26,9 +27,9 @@ const SEQUENCIA: Array = [
 	["input_v", "TRIÂNGULO  ·  MEIO DIREITO"],
 	["input_b", "R1  ·  JOGADAS EXTREMAS"],
 	["input_credit", "SELECT  ·  CRÉDITO"],
-	["input_teste", "L3  ·  CONFIGURAÇÃO"],
+	["input_teste", "R2  ·  CONFIGURAÇÃO (ABRE E FECHA)"],
 ]
-## Os primeiros são obrigatórios; SELECT e L3 podem ser pulados (a
+## Os primeiros são obrigatórios; SELECT e R2 podem ser pulados (a
 ## máquina pode não ter esses botões ligados).
 const OBRIGATORIOS := 6
 
@@ -46,6 +47,11 @@ const JOGADAS := {
 const SEGURAR_PARA_CONFIGURAR_MS := 10000
 const CENA_CONFIGURACAO := "res://scene/configuracao_tvbox.tscn"
 const CENA_MENU := "res://scene/Main Menu.tscn"
+const CENA_ABERTURA := "res://scene/abertura.tscn"
+## R2 da Zero Delay (índice de joystick do Godot 3). Abre a configuração
+## em qualquer tela e, dentro dela, fecha. Vale sempre, além do botão que
+## for gravado no passo "R2" da configuração.
+const BOTAO_R2 := 7
 
 var mapeamento_gravado := false
 var _segurado_desde = {}
@@ -117,6 +123,23 @@ func _aplicar(botoes: Dictionary) -> void:
 			ev.device = -1
 			ev.button_index = int(texto.trim_prefix("botao:")) 
 			InputMap.action_add_event(acao, ev)
+	_garantir_r2(botoes)
+
+
+## O R2 abre a configuração mesmo com um mapeamento antigo gravado (de
+## quando o botão era o L3), a não ser que ele tenha virado outra jogada.
+func _garantir_r2(botoes: Dictionary) -> void:
+	var codigo_r2 = "botao:%d" % BOTAO_R2
+	for acao in botoes:
+		if acao != "input_teste" and str(botoes[acao]) == codigo_r2:
+			return
+	for ev in InputMap.get_action_list("input_teste"):
+		if ev is InputEventJoypadButton and ev.button_index == BOTAO_R2:
+			return
+	var r2 := InputEventJoypadButton.new()
+	r2.device = -1
+	r2.button_index = BOTAO_R2
+	InputMap.action_add_event("input_teste", r2)
 
 
 ## Código gravável de um evento: "botao:N" (joystick) ou "tecla:N";
@@ -233,6 +256,14 @@ func _input(event: InputEvent) -> void:
 	# pergunta nada (abertura, transição): senão um botão solto nessa hora
 	# ficaria "segurado" e o próximo clique dele seria ignorado.
 	eh_da_placa(event)
+	# R2 NA ABERTURA: a abertura não tem controle próprio; daqui já vai
+	# direto para a configuração (menu, demo e partida tratam o R2 nelas).
+	if eh_config(event):
+		var atual = get_tree().current_scene
+		if atual != null and atual.filename == CENA_ABERTURA:
+			get_tree().set_input_as_handled()
+			get_tree().call_deferred("change_scene", CENA_CONFIGURACAO)
+			return
 	var chave = codigo_do_evento(event)
 	if chave == "":
 		return
