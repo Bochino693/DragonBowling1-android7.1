@@ -1,4 +1,4 @@
-DRAGON BOWLING - VERSAO TV BOX S905L (ANDROID 7.1) - BUILD 4
+DRAGON BOWLING - VERSAO TV BOX S905L (ANDROID 7.1) - BUILD 5
 ============================================================
 
 PARA QUAL MAQUINA E ESTA VERSAO
@@ -16,6 +16,28 @@ pinos, STRIKE/ACERTO/PRA FORA, tela final, recorde, modo demo, tela de
 configurar os botoes da Zero Delay, sons e LEDs do Arduino. Conferido
 lado a lado com a versao 4.6 rodando o mesmo roteiro de jogadas: mesmas
 telas e o mesmo resultado (29 pinos, 2 strikes).
+
+O QUE A BUILD 5 CORRIGE ("O JOGO PAROU" DEPOIS DE MUITO TEMPO LIGADO)
+--------------------------------------------------------------------
+O ERRO REAL: o crash era do PLUGIN USB do Arduino dos LEDs, nao da
+memoria nem da placa. A leitura da porta USB ficava presa esperando dados
+sem tempo limite (UsbDeviceConnection.requestWait) numa thread separada.
+Quando o Arduino demorava a responder, o jogo fechava a porta e reabria
+(a cada 4,5 a 7,5 s, para sempre). Fechar a conexao com a leitura ainda
+presa derruba o processo inteiro no Android 7 (e em varias placas Android
+10):  Fatal signal 11 (SIGSEGV) ... libusbhost.so (usb_request_wait).
+Acontece "de vez em quando", depois de muitas reconexoes, e o Android
+mostra "o app parou". A propria biblioteca USB registra esse crash.
+- Plugin novo (Java): le com tempo limite de 0,3 s, para a leitura e
+  ESPERA a thread sair antes de fechar a porta, e nunca fecha no meio de
+  uma escrita. As funcoes que o jogo chama sao as mesmas.
+- Troca de tela que podia ficar parada para sempre (a cortina esperava
+  uma animacao que podia ser cancelada): o START parava de responder.
+  Agora a cortina nunca espera mais que meio segundo.
+- Arquivo de importacao da bola corrompido no projeto (corrigido).
+MEDIDO: 15 ciclos seguidos de menu + demo e mais 20 minutos de botoes
+apertados ao acaso: memoria, objetos e texturas voltam sempre aos
+MESMOS numeros (sem vazamento). Nao e "buffer forcando o Android".
 
 EMOJIS
 ------

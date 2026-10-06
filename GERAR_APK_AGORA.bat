@@ -1,6 +1,6 @@
 @echo off
 setlocal
-rem DRAGON_BUILD=4
+rem DRAGON_BUILD=5
 title Dragon Bowling S905L - Gerar APK Android
 cd /d "%~dp0"
 
