@@ -2126,7 +2126,8 @@ func preparar_intro_visual() -> void:
 				base_pos = p.get_meta("intro_base_pos")
 
 			# Entra de baixo levemente
-			p.position = base_pos + Vector2(0, 70)
+			# A MÁQUINA BAIXA OS PINOS: entram de cima (ver animar_pinos_em_cascata)
+			p.position = base_pos + Vector2(0, -DESCIDA_MONTAGEM_PINOS)
 
 		if p is CanvasItem:
 			p.modulate = Color(1, 1, 1, 0.0)
@@ -2162,6 +2163,9 @@ func preparar_intro_visual() -> void:
 	_reaplicar_layout_leve()
 
 
+
+## Quanto o rack desce do alto na montagem dos pinos.
+const DESCIDA_MONTAGEM_PINOS := 120.0
 
 func animar_intro_partida() -> void:
 	var _g3_estado = null
@@ -2236,28 +2240,18 @@ func animar_intro_partida() -> void:
 #		tw_mapa_label.tween_property(mapa_label, "modulate:a", 1.0, 0.16).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 #		await tw_mapa_label.finished
 
-	if OS.get_name() == "Android":
-		# A introdução no Android não mantém o controle bloqueado pelo banner.
-		for p in pins:
-			if p == null:
-				continue
-			if p.has_meta("intro_base_pos"):
-				p.position = p.get_meta("intro_base_pos")
-			p.modulate.a = 1.0
-		if bola != null:
-			if bola.has_meta("intro_base_pos"):
-				bola.position = bola.get_meta("intro_base_pos")
-			bola.modulate.a = 1.0
-	else:
-		_g3_estado = animar_pinos_em_cascata()
-		if _g3_estado is GDScriptFunctionState:
-			_g3_estado = yield(_g3_estado, "completed")
-		_g3_estado = animar_bola_entrada()
-		if _g3_estado is GDScriptFunctionState:
-			_g3_estado = yield(_g3_estado, "completed")
-		_g3_estado = mostrar_round_banner_intro(1)
-		if _g3_estado is GDScriptFunctionState:
-			_g3_estado = yield(_g3_estado, "completed")
+	# A MONTAGEM DOS PINOS APARECE TAMBÉM NA TV BOX. Antes o Android pulava
+	# a cascata, a entrada da bola e o banner (os pinos "brotavam" prontos)
+	# só para o banner não segurar o controle. Agora a montagem roda igual
+	# no PC e na TV Box (~1 s), e o banner "ROUND 1" corre por cima sem
+	# prender o controle.
+	_g3_estado = animar_pinos_em_cascata()
+	if _g3_estado is GDScriptFunctionState:
+		_g3_estado = yield(_g3_estado, "completed")
+	_g3_estado = animar_bola_entrada()
+	if _g3_estado is GDScriptFunctionState:
+		_g3_estado = yield(_g3_estado, "completed")
+	mostrar_round_banner_intro(1)
 
 	intro_em_andamento = false
 	aceitando_input = true
@@ -2555,31 +2549,42 @@ func _empurrar_pinos_proximos_da_passagem(ponto: Vector2, principal: Node, forca
 
 
 
+## A MONTAGEM DOS PINOS: a máquina baixa o rack, fileira por fileira, do
+## fundo para a frente (7-10, 4-6, 2-3, 1). Cada pino desce do alto, aparece
+## e assenta com um quique curto. Roda igual no PC e na TV Box.
 func animar_pinos_em_cascata() -> void:
-	var ordem: Array = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+	var fileiras: Array = [[7, 8, 9, 10], [4, 5, 6], [2, 3], [1]]
+	var ultimo: SceneTreeTween = null
 
-	for numero in ordem:
-		var p = obter_pino_por_numero(int(numero))
-		if p == null:
-			continue
+	for fileira in fileiras:
+		for numero in fileira:
+			var p = obter_pino_por_numero(int(numero))
+			if p == null or not is_instance_valid(p):
+				continue
 
-		var base_pos: Vector2 = p.position
-		if p.has_meta("intro_base_pos"):
-			base_pos = p.get_meta("intro_base_pos")
+			var base_pos: Vector2 = p.position
+			if p.has_meta("intro_base_pos"):
+				base_pos = p.get_meta("intro_base_pos")
 
-		var tw: SceneTreeTween = create_tween()
-		tw.set_trans(Tween.TRANS_BACK)
-		tw.set_ease(Tween.EASE_OUT)
+			var tw: SceneTreeTween = create_tween()
+			tw.set_parallel(true)
+			if p is CanvasItem:
+				tw.tween_property(p, "modulate:a", 1.0, 0.16)
+			if p is Node2D:
+				tw.tween_property(p, Compat.prop(p, "position"), base_pos, 0.34)\
+					.set_trans(Tween.TRANS_BOUNCE).set_ease(Tween.EASE_OUT)
+			ultimo = tw
+			yield(get_tree().create_timer(0.03), "timeout")
+		yield(get_tree().create_timer(0.07), "timeout")
 
-		if p is CanvasItem:
-			tw.parallel().tween_property(p, "modulate:a", 1.0, 0.14)
-
-		if p is Node2D:
-			tw.parallel().tween_property(p, Compat.prop(p, "position"), base_pos, 0.22)
-
-		yield(get_tree().create_timer(0.045), "timeout")
-
-	yield(get_tree().create_timer(0.12), "timeout")
+	if ultimo != null and ultimo.is_valid():
+		yield(ultimo, "finished")
+	# Garante cada pino exatamente no lugar, mesmo se um quadro longo da TV
+	# Box tiver cortado a animação no meio.
+	for p in pins:
+		if p != null and is_instance_valid(p) and p is Node2D and p.has_meta("intro_base_pos"):
+			p.position = p.get_meta("intro_base_pos")
+			p.modulate.a = 1.0
 
 
 func animar_bola_entrada() -> void:
@@ -5745,7 +5750,7 @@ func animar_montagem_round_ou_player() -> void:
 		if p is Node2D:
 			var base_pos: Vector2 = p.position
 			p.set_meta("intro_base_pos", base_pos)
-			p.position = base_pos + Vector2(0, 90)
+			p.position = base_pos + Vector2(0, -DESCIDA_MONTAGEM_PINOS)
 
 	_g3_estado = animar_pinos_em_cascata()
 	if _g3_estado is GDScriptFunctionState:

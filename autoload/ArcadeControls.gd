@@ -64,10 +64,70 @@ var _evento_visto: InputEvent = null
 var _veredito_visto := false
 
 
+## Pedido da demo: o menu abre já perguntando 1 ou 2 jogadores.
+var abrir_selecao_de_jogadores := false
+
+## Teclas do controle remoto da TV Box: nunca viram jogada.
+const TECLAS_DO_CONTROLE_REMOTO := [
+	KEY_UP, KEY_DOWN, KEY_LEFT, KEY_RIGHT, KEY_ENTER, KEY_KP_ENTER,
+	KEY_ESCAPE, KEY_BACK, KEY_MENU, KEY_VOLUMEUP, KEY_VOLUMEDOWN,
+	KEY_VOLUMEMUTE, KEY_HOMEPAGE, KEY_TAB, KEY_SPACE,
+]
+
+
 func _ready() -> void:
 	pause_mode = Node.PAUSE_MODE_PROCESS
+	_liberar_todos_os_botoes()
+	if not Input.is_connected("joy_connection_changed", self, "_on_joy_connection_changed"):
+		Input.connect("joy_connection_changed", self, "_on_joy_connection_changed")
 	_desligar_acoes_de_interface()
 	_carregar()
+
+
+## "VOLTAR" DO ANDROID NÃO FECHA O JOGO.
+##
+## No Android, um botão de joystick que o jogo não usa vira, por padrão do
+## sistema, a tecla VOLTAR. O Godot vem de fábrica fechando o aplicativo
+## no VOLTAR: `application/config/quit_on_go_back=false` (project.godot)
+## desliga o fechamento; aqui o pedido é só ignorado.
+func _notification(what: int) -> void:
+	if what == MainLoop.NOTIFICATION_WM_GO_BACK_REQUEST:
+		print("ArcadeControls: VOLTAR do Android ignorado (o jogo não fecha).")
+
+
+## R1 QUE NÃO CHEGAVA NO JOGO.
+##
+## No Android o Godot passa todo joystick desconhecido (a Zero Delay é um)
+## pelo mapa "Default Android Gamepad", que só conhece A/B/X/Y, L1/R1,
+## SELECT/START e L3/R3. Qualquer outro botão (L2/R2 como tecla, GUIDE, C,
+## Z, BUTTON_1..16 de placa genérica, direcional como tecla) era JOGADO
+## FORA antes de chegar ao script — por isso o R1 não fazia nada, nem dava
+## para gravá-lo na configuração.
+##
+## Aqui cada joystick ganha um mapa COMPLETO: os botões de sempre ficam com
+## o mesmo número (nada do que já estava gravado muda) e os que eram
+## descartados passam a chegar (GUIDE, MISC, PADDLE...). Esses não têm
+## outra função: na partida valem como R1 (tecla_jogada) e no assistente
+## podem ser gravados em qualquer passo.
+const MAPA_COMPLETO_ANDROID := "leftx:a0,lefty:a1,rightx:a2,righty:a3,lefttrigger:a4,righttrigger:a5,dpup:h0.1,dpdown:h0.4,dpleft:h0.8,dpright:h0.2,a:b0,b:b1,x:b2,y:b3,back:b4,guide:b5,start:b6,leftstick:b7,rightstick:b8,leftshoulder:b9,rightshoulder:b10,dpup:b11,dpdown:b12,dpleft:b13,dpright:b14,lefttrigger:b15,righttrigger:b16,misc1:b17,paddle1:b18,misc1:b19,paddle2:b20,paddle3:b21,paddle4:b22,touchpad:b23,misc1:b24,misc1:b25,misc1:b26,misc1:b27,misc1:b28,misc1:b29,misc1:b30,misc1:b31,misc1:b32,misc1:b33,misc1:b34,misc1:b35,platform:Android"
+
+func _liberar_todos_os_botoes() -> void:
+	if OS.get_name() != "Android":
+		return
+	for id in Input.get_connected_joypads():
+		_liberar_botoes_do_joystick(id)
+
+
+func _liberar_botoes_do_joystick(id: int) -> void:
+	var guid = Input.get_joy_guid(id)
+	if guid == "" or "," in guid:
+		return
+	Input.add_joy_mapping("%s,Zero Delay,%s" % [guid, MAPA_COMPLETO_ANDROID], true)
+
+
+func _on_joy_connection_changed(id: int, conectado: bool) -> void:
+	if conectado and OS.get_name() == "Android":
+		_liberar_botoes_do_joystick(id)
 
 
 ## As ações "ui_*" vêm de fábrica ligadas a ENTER, espaço, setas e ao
@@ -236,7 +296,25 @@ func tecla_jogada(event: InputEvent) -> String:
 	for acao in JOGADAS:
 		if event.is_action_pressed(acao):
 			return JOGADAS[acao]
+	# R1 QUALQUER QUE SEJA O NÚMERO: na partida, um botão da placa que não
+	# é START, crédito, teste nem outra jogada é a jogada lateral (B).
+	if event.is_pressed() and _sem_acao_da_placa(event):
+		return "B"
 	return ""
+
+
+func _sem_acao_da_placa(event: InputEvent) -> bool:
+	if event is InputEventKey:
+		var k = event as InputEventKey
+		var codigo = k.scancode if k.scancode != 0 else k.physical_scancode
+		if codigo == 0 or codigo in TECLAS_DO_CONTROLE_REMOTO:
+			return false
+	elif not event is InputEventJoypadButton:
+		return false
+	for item in SEQUENCIA:
+		if event.is_action(item[0]):
+			return false
+	return true
 
 
 ## Qualquer botão da placa conta como "alguém está jogando".

@@ -112,9 +112,13 @@ func _input(event: InputEvent) -> void:
 
 	# START abre o jogo
 	# START abre o jogo com som da moeda
+	# START na demo NÃO começa uma partida de 1 jogador sozinho: volta ao
+	# menu já com o modal "1 ou 2 jogadores" aberto (moeda + contagem). Um
+	# segundo START escolhe 2 jogadores, igual ao menu.
 	if ArcadeControls.eh_start(event):
 		get_viewport().set_input_as_handled()
-		_abrir_jogo_com_moeda()
+		ArcadeControls.abrir_selecao_de_jogadores = true
+		encerrar_demo()
 		return
 
 

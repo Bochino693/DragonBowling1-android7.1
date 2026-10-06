@@ -128,6 +128,10 @@ func _ready() -> void:
 	_iniciar_animacao_logo()
 	_iniciar_animacao_idle()
 	_resetar_timer_demo()
+	# Veio da demo pelo START: já abre a escolha de 1 ou 2 jogadores.
+	if ArcadeControls.abrir_selecao_de_jogadores:
+		ArcadeControls.abrir_selecao_de_jogadores = false
+		_registrar_pulso_start()
 
 	var viewport: Viewport = get_viewport()
 	if viewport != null and not viewport.is_connected("size_changed", self, "_on_viewport_size_changed"):

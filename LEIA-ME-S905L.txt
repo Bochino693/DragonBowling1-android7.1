@@ -1,4 +1,4 @@
-DRAGON BOWLING - VERSAO TV BOX S905L (ANDROID 7.1) - BUILD 6
+DRAGON BOWLING - VERSAO TV BOX S905L (ANDROID 7.1) - BUILD 7
 ============================================================
 
 PARA QUAL MAQUINA E ESTA VERSAO
@@ -17,7 +17,31 @@ configurar os botoes da Zero Delay e sons. Conferido
 lado a lado com a versao 4.6 rodando o mesmo roteiro de jogadas: mesmas
 telas e o mesmo resultado (29 pinos, 2 strikes).
 
-O QUE A BUILD 6 CORRIGE
+O QUE A BUILD 7 CORRIGE
+-----------------------
+1. R1 (JOGADA LATERAL) QUE NAO CHEGAVA NO JOGO. No Android o Godot passa
+   a Zero Delay pelo mapa "Default Android Gamepad", que so conhece
+   A/B/X/Y, L1/R1, SELECT/START e L3/R3: qualquer outro botao (L2/R2 como
+   tecla, GUIDE, C, Z, BUTTON_1..16 de placa generica, direcional como
+   tecla) era jogado fora antes de chegar ao jogo. Agora cada joystick
+   ganha um mapa completo: os botoes de sempre ficam com o mesmo numero
+   (a configuracao gravada continua valendo) e os que eram descartados
+   passam a chegar.
+2. JOGADA LATERAL GARANTIDA: na partida, um botao da placa que nao e
+   START, credito, configuracao nem outra jogada vale como R1. Teclas do
+   controle remoto (setas, OK, voltar, volume) continuam sem efeito.
+   Conferido: botao 25, botao 22, R1, tecla G e uma tecla sem uso lancam a
+   lateral e derrubam um unico pino.
+3. NENHUMA TECLA FECHA O JOGO: o VOLTAR do Android (que um botao "sem
+   funcao" do joystick vira) e ignorado (quit_on_go_back desligado).
+4. MONTAGEM DOS PINOS NA TV BOX: o Android pulava a montagem (os pinos
+   "brotavam" prontos). Agora a maquina baixa o rack fileira por fileira
+   (7-10, 4-6, 2-3, 1) com um quique, em toda partida e round novo.
+5. START NA DEMO nao comeca mais uma partida de 1 jogador sozinho: volta ao
+   menu ja com o modal "1 ou 2 jogadores" aberto. Um START = 1 jogador;
+   dois STARTs = 2 jogadores.
+
+O QUE A BUILD 6 CORRIGIU
 -----------------------
 1. A PISTA "DESCONFIGURADA" NA PARTIDA (so um pedaco da pista no canto de
    baixo, o resto preto, pinos fora da tela). O ERRO REAL: a camera da
