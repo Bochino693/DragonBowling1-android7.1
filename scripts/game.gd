@@ -551,6 +551,8 @@ func _ready() -> void:
 	ajustar_fundo_fullscreen()
 	alinhar_camera_sem_mexer_na_pista()
 	camera_zoom_idle = camera_base_zoom
+	if not get_viewport().is_connected("size_changed", self, "_on_viewport_size_changed"):
+		get_viewport().connect("size_changed", self, "_on_viewport_size_changed")
 
 	_configurar_shader_brilho_fundo()
 	_inicializar_pools_de_audio()
@@ -716,6 +718,7 @@ func _definir_frenesi(v: float) -> void:
 
 
 func _on_viewport_size_changed() -> void:
+	call_deferred("alinhar_camera_sem_mexer_na_pista")
 	call_deferred("_reaplicar_layout_leve")
 
 
@@ -1003,21 +1006,30 @@ func procurar_no_recursivo(root: Node, nome: String) -> Node:
 	return null
 
 
+## A câmera fica SEMPRE no centro da viewport, com zoom 1: assim o mundo
+## (pinos, bola) e a pista (ParallaxBackground, que segue a câmera) saem
+## exatamente onde foram desenhados, ocupando a tela inteira.
+##
+## Antes a câmera copiava a posição da camada "pista" — mas é a própria
+## câmera que move essa camada. Cada nova chamada trocava entre o certo e
+## o errado (câmera em 0,0 = pista empurrada para baixo e para a direita,
+## pinos fora da tela), e na TV Box a ordem dos quadros decidia qual dos
+## dois ficava. Agora a conta não depende de nada que a câmera mexe.
 func alinhar_camera_sem_mexer_na_pista() -> void:
 	if camera_jogo == null:
 		return
 
 	camera_jogo.current = true
+	camera_jogo.anchor_mode = Camera2D.ANCHOR_MODE_DRAG_CENTER
 	camera_jogo.offset = Vector2.ZERO
-
-	if pista_root != null:
-		camera_jogo.global_position = pista_root.global_position
-	else:
-		camera_jogo.global_position = Vector2(512, 768)
+	camera_jogo.zoom = Vector2.ONE
+	camera_jogo.global_position = get_viewport_rect().size * 0.5
+	camera_jogo.force_update_scroll()
 
 	camera_base_pos = camera_jogo.global_position
-	camera_base_zoom = camera_jogo.zoom
-	camera_base_offset = camera_jogo.offset
+	camera_base_zoom = Vector2.ONE
+	camera_base_offset = Vector2.ZERO
+	camera_zoom_idle = Vector2.ONE
 
 
 func criar_10_pinos() -> void:

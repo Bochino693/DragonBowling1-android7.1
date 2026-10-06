@@ -1,6 +1,6 @@
 @echo off
 setlocal
-rem DRAGON_BUILD=5
+rem DRAGON_BUILD=6
 rem Script interno: quem chama e o GERAR_APK_AGORA.bat (na raiz), pelo
 rem GERAR_APK_COMPLETO.ps1, que ja deixa o Godot 3.6.2, o modelo Android, o
 rem plugin USB, o Java e a chave de assinatura prontos.
@@ -13,10 +13,6 @@ if "%~1"=="" (
 if not exist "%~1" (
   echo ERRO: executavel do Godot nao encontrado: %~1
   exit /b 2
-)
-if not exist "android\plugins\DragonUsbSerial-release.aar" (
-  echo ERRO: plugin USB nao encontrado em android\plugins.
-  exit /b 3
 )
 if not exist "android\build\build.gradle" (
   echo ERRO: modelo Android do Godot 3.6.2 nao encontrado em android\build.

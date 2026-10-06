@@ -9,8 +9,6 @@ addons/DragonUsbSerial/bin/debug/plugin-debug.aar
 addons/DragonUsbSerial/bin/release/plugin-release.aar
 addons/DragonUsbSerial/export_plugin.gd
 addons/DragonUsbSerial/plugin.cfg
-android/plugins/DragonUsbSerial-release.aar
-android/plugins/DragonUsbSerial.gdap
 arduino/.gdignore
 arduino/leds_boliche/leds_boliche.ino
 autoload/ArcadeControls.gd
@@ -136,6 +134,8 @@ tools/dragon_usb_plugin_g3/UsbAttachActivity.java
 tools/dragon_usb_plugin_g3/dragon_usb_devices.xml
 tools/dragon_usb_plugin_g3/java/com/lazersport/dragon/usbserial/GodotAndroidPlugin.java
 tools/dragon_usb_plugin_g3/montar_aar.py
+tools/dragon_usb_plugin_g3/pronto/DragonUsbSerial-release.aar
+tools/dragon_usb_plugin_g3/pronto/DragonUsbSerial.gdap
 tools/dragon_usb_plugin_g3/stubs/com/hoho/android/usbserial/driver/UsbSerialDriver.java
 tools/dragon_usb_plugin_g3/stubs/com/hoho/android/usbserial/driver/UsbSerialPort.java
 tools/dragon_usb_plugin_g3/stubs/com/hoho/android/usbserial/driver/UsbSerialProber.java

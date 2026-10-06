@@ -13,7 +13,7 @@ Set-Location $Raiz
 # (DRAGON_BUILD=...): se a pasta tiver arquivos de builds diferentes
 # misturados (zip novo extraido por cima de um velho), a geracao para aqui,
 # antes de fazer qualquer coisa.
-$Build = 5
+$Build = 6
 $VersaoGodot = "3.6.2"
 $VersaoModelos = "3.6.2.stable"
 $UrlBase = "https://github.com/godotengine/godot/releases/download/3.6.2-stable"
@@ -21,7 +21,6 @@ $UrlBase = "https://github.com/godotengine/godot/releases/download/3.6.2-stable"
 $env:ANDROID_HOME = "C:\AndroidSdk"
 $env:ANDROID_SDK_ROOT = "C:\AndroidSdk"
 $ApkEsperado = Join-Path $Raiz "build\android\DragonBowling-S905L.apk"
-$PluginPronto = Join-Path $Raiz "android\plugins\DragonUsbSerial-release.aar"
 
 # Qualquer falha sai UMA vez, em portugues, sem o bloco tecnico do
 # PowerShell (linha, caractere, CategoryInfo...).
@@ -152,12 +151,12 @@ if ($Misturados.Count -gt 0) {
         "`nExtraia o zip da build $Build de novo, respondendo SIM para substituir tudo.")
 }
 
-$PluginGdap = Join-Path $Raiz "android\plugins\DragonUsbSerial.gdap"
-if (-not (Test-Path -LiteralPath $PluginPronto) -or -not (Test-Path -LiteralPath $PluginGdap)) {
-    Parar "Plugin USB nao encontrado em android\plugins (DragonUsbSerial-release.aar e .gdap). Extraia o zip de novo."
-}
-if (-not ((Get-Content -LiteralPath (Join-Path $Raiz "export_presets.cfg") -Raw) -match "(?m)^plugins/DragonUsbSerial=true")) {
-    Parar "O export_presets.cfg nao liga o plugin DragonUsbSerial (LEDs do Arduino). Extraia o zip de novo."
+# SEM PERMISSOES: o jogo usa so a placa Zero Delay (joystick/teclado, que o
+# Android entrega sem perguntar nada). O plugin USB serial do Arduino nao
+# entra no APK: com ele o Android perguntava "permitir acesso ao USB?" e
+# "abrir o Dragon Bowling para este aparelho USB?".
+if ((Get-Content -LiteralPath (Join-Path $Raiz "export_presets.cfg") -Raw) -match "(?m)^plugins/DragonUsbSerial=true") {
+    Parar "O export_presets.cfg liga o plugin USB serial (faria o Android pedir permissao). Extraia o zip da build $Build de novo."
 }
 
 # Apaga o resultado ANTES de qualquer compilacao. Assim uma falha no plugin
@@ -311,12 +310,19 @@ if ($ManifestoTexto -notmatch "DRAGON_TV_BOX") {
     $Recursos = @'
     <uses-feature android:name="android.software.leanback" android:required="false" />
     <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
-    <uses-feature android:name="android.hardware.usb.host" android:required="false" />
 <!--CHUNK_USER_PERMISSIONS_BEGIN-->
 '@
     $ManifestoTexto = $ManifestoTexto.Replace('<!--CHUNK_USER_PERMISSIONS_BEGIN-->', $Recursos.TrimEnd())
     [System.IO.File]::WriteAllText($Manifesto, $ManifestoTexto, (New-Object System.Text.UTF8Encoding($false)))
     Write-Host "      Manifesto: TV Box (Leanback + inicio)." -ForegroundColor Green
+}
+# Modelo Android preparado por uma build antiga: tira a linha de USB.
+$ManifestoTexto = [System.IO.File]::ReadAllText($Manifesto)
+$LinhaUsb = '(?m)^[ \t]*<uses-feature android:name="android\.hardware\.usb\.host"[^>]*/>\r?\n'
+if ($ManifestoTexto -match $LinhaUsb) {
+    $ManifestoTexto = [regex]::Replace($ManifestoTexto, $LinhaUsb, '')
+    [System.IO.File]::WriteAllText($Manifesto, $ManifestoTexto, (New-Object System.Text.UTF8Encoding($false)))
+    Write-Host "      Manifesto: sem USB (so a placa Zero Delay)." -ForegroundColor Green
 }
 
 # TELA CHEIA: a Activity do modelo do Godot 3 deixa uma margem para as barras
@@ -455,9 +461,9 @@ $env:JAVA_HOME = $Java
 $env:Path = (Join-Path $Java "bin") + ";" + $env:Path
 
 # ------------------------------------------------------------------
-# [2/4] O PLUGIN USB (LEDs do Arduino) VEM PRONTO em android\plugins (o
-# .aar e o .gdap; ver tools\dragon_usb_plugin_g3). Nao e recompilado aqui.
-Write-Host "[2/4] Plugin USB pronto: $PluginPronto" -ForegroundColor Cyan
+# [2/4] SEM PLUGIN USB: os comandos vem so da placa Zero Delay, que nao
+# precisa de permissao nenhuma.
+Write-Host "[2/4] Sem plugin USB: so a placa Zero Delay, nenhuma permissao." -ForegroundColor Cyan
 
 # ------------------------------------------------------------------
 # [3/4] A ASSINATURA. A mesma chave de sempre (a de depuracao do Godot, em
@@ -568,8 +574,8 @@ if (Test-Path -LiteralPath $Cache) {
     [System.IO.File]::WriteAllText($MarcaDoCache, "$Build")
 }
 
-# CONFERE O QUE VAI PARA A TV BOX: o motor para as duas arquiteturas e o
-# plugin USB (sem ele, os LEDs do Arduino nao acendem) dentro do APK.
+# CONFERE O QUE VAI PARA A TV BOX: o motor para as duas arquiteturas, e
+# NADA que faca o Android perguntar algo (plugin USB, permissoes).
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 $Zip = [System.IO.Compression.ZipFile]::OpenRead($Apk.FullName)
 try {
@@ -584,14 +590,29 @@ try {
         $Leitor.Close()
         if ($Conteudo.Contains("Lcom/lazersport/dragon/usbserial/GodotAndroidPlugin;")) { $TemPlugin = $true; break }
     }
-    if (-not $TemPlugin) { Parar "O APK saiu SEM o plugin USB (os LEDs do Arduino nao acenderiam)." }
+    if ($TemPlugin) { Parar "O APK saiu COM o plugin USB serial (o Android pediria permissao de USB)." }
+    $Manif = $Zip.Entries | Where-Object { $_.FullName -eq "AndroidManifest.xml" } | Select-Object -First 1
+    if ($Manif -eq $null) { Parar "O APK saiu sem AndroidManifest.xml." }
+    # O manifesto do APK e binario: os textos podem estar em UTF-16 ou UTF-8.
+    $Fluxo = $Manif.Open(); $Memoria = New-Object System.IO.MemoryStream
+    $Fluxo.CopyTo($Memoria); $Fluxo.Close()
+    $Bytes = $Memoria.ToArray()
+    $TextoManif = [System.Text.Encoding]::Unicode.GetString($Bytes) + [System.Text.Encoding]::GetEncoding(28591).GetString($Bytes)
+    $Perigosas = @("android.permission.CAMERA", "android.permission.RECORD_AUDIO",
+        "android.permission.READ_EXTERNAL_STORAGE", "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.ACCESS_FINE_LOCATION", "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.READ_PHONE_STATE", "android.permission.SYSTEM_ALERT_WINDOW",
+        "android.permission.BLUETOOTH", "android.hardware.usb.action.USB_DEVICE_ATTACHED")
+    foreach ($P in $Perigosas) {
+        if ($TextoManif.Contains($P)) { Parar "O APK pede $P (o Android faria uma pergunta). Confira as permissoes no export_presets.cfg." }
+    }
 } finally {
     $Zip.Dispose()
 }
 
 Write-Host ""
 Write-Host "APK GERADO E CONFERIDO - build $Build, sem erros" -ForegroundColor Green
-Write-Host "Conferido: motor ARM 32 e 64 bits e plugin USB (LEDs do Arduino) dentro do APK."
+Write-Host "Conferido: motor ARM 32 e 64 bits; sem plugin USB e sem permissoes (so a placa Zero Delay)."
 Write-Host "Arquivo: $($Apk.FullName)"
 Write-Host "Tamanho: $([math]::Round($Apk.Length / 1MB, 2)) MB"
 Write-Host "SHA256: $((Get-FileHash -LiteralPath $Apk.FullName -Algorithm SHA256).Hash)"

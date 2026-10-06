@@ -1,4 +1,4 @@
-DRAGON BOWLING - VERSAO TV BOX S905L (ANDROID 7.1) - BUILD 5
+DRAGON BOWLING - VERSAO TV BOX S905L (ANDROID 7.1) - BUILD 6
 ============================================================
 
 PARA QUAL MAQUINA E ESTA VERSAO
@@ -13,12 +13,35 @@ A placa de video da S905L (Mali-450) so tem OpenGL ES 2.0 e todo Godot 4
 exige o 3.0. Este e o MESMO jogo passado para o Godot 3.6.2: abertura,
 menu, escolha de 1 ou 2 jogadores, pista, bola, pinos, placar, mapa dos
 pinos, STRIKE/ACERTO/PRA FORA, tela final, recorde, modo demo, tela de
-configurar os botoes da Zero Delay, sons e LEDs do Arduino. Conferido
+configurar os botoes da Zero Delay e sons. Conferido
 lado a lado com a versao 4.6 rodando o mesmo roteiro de jogadas: mesmas
 telas e o mesmo resultado (29 pinos, 2 strikes).
 
-O QUE A BUILD 5 CORRIGE ("O JOGO PAROU" DEPOIS DE MUITO TEMPO LIGADO)
---------------------------------------------------------------------
+O QUE A BUILD 6 CORRIGE
+-----------------------
+1. A PISTA "DESCONFIGURADA" NA PARTIDA (so um pedaco da pista no canto de
+   baixo, o resto preto, pinos fora da tela). O ERRO REAL: a camera da
+   partida copiava a posicao da camada da pista, mas e a propria camera
+   que move essa camada. Cada vez que o jogo realinhava a camera, ela
+   trocava entre o lugar certo e um lugar errado (meia tela para baixo e
+   para a direita), e na TV Box a ordem dos quadros decidia qual ficava.
+   Agora a camera fica SEMPRE no centro da tela com zoom 1: a pista e os
+   pinos aparecem inteiros, no lugar certo, sem zoom e sem corte.
+   Conferido com o realinhamento repetido de proposito, com a tela girada
+   para os dois lados e sem giro, e em minutos de jogadas seguidas.
+2. NENHUMA PERMISSAO E NENHUMA PERGUNTA. O jogo usa so a placa Zero Delay
+   (joystick/teclado), que o Android entrega sem perguntar nada. O plugin
+   USB serial (Arduino dos LEDs) saiu do APK: era ele que fazia o Android
+   perguntar "permitir acesso ao USB?" e "abrir o Dragon Bowling para este
+   aparelho USB?". O gerador do APK confere no final: se o APK tiver o
+   plugin USB ou pedir camera, microfone, arquivos, localizacao etc., ele
+   PARA e avisa.
+   Se a TV Box ja tinha o Dragon Bowling com "usar por padrao" marcado
+   para o Arduino, desinstale o antigo antes (ou limpe os padroes do app
+   em Configuracoes > Apps): assim nenhuma caixa antiga volta.
+
+O QUE A BUILD 5 CORRIGIU ("O JOGO PAROU" DEPOIS DE MUITO TEMPO LIGADO)
+---------------------------------------------------------------------
 O ERRO REAL: o crash era do PLUGIN USB do Arduino dos LEDs, nao da
 memoria nem da placa. A leitura da porta USB ficava presa esperando dados
 sem tempo limite (UsbDeviceConnection.requestWait) numa thread separada.
@@ -83,9 +106,9 @@ imagem do jogo, e a linha "TELA: JOGO ... ANDROID ...".
 
 LEDS (ARDUINO)
 --------------
-O plugin USB vai dentro do APK. No primeiro encaixe do Arduino o Android
-pergunta se o Dragon Bowling pode usar o aparelho: marque "Usar por
-padrao" e confirme. Nao pergunta mais.
+Desligados a partir da build 6: o jogo usa so a placa Zero Delay e nao
+pede permissao nenhuma. O plugin USB continua guardado em
+tools\dragon_usb_plugin_g3\pronto, fora do APK.
 
 O QUE MUDOU POR DENTRO (voce nao ve na tela)
 --------------------------------------------

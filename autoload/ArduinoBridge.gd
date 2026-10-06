@@ -28,14 +28,10 @@ var _last_led_sent := ""
 
 func _ready() -> void:
 	pause_mode = Node.PAUSE_MODE_PROCESS
-	if OS.get_name() != "Android":
-		_set_status("USB disponível no APK Android; teclado para testes no editor")
-		return
-	if not Engine.has_singleton("DragonUsbSerial"):
-		_set_status("Plugin USB ausente: gere o APK com Gradle e DragonUsbSerial")
-		return
-	_plugin = Engine.get_singleton("DragonUsbSerial")
-	_scan()
+	# O jogo usa SO a placa Zero Delay (joystick/teclado): o Android a
+	# entrega sem perguntar nada. O USB serial (Arduino dos LEDs) fica
+	# desligado: ele fazia o Android pedir permissao de USB.
+	_set_status("Somente placa Zero Delay: sem USB serial e sem permissoes")
 
 
 func _process(_delta: float) -> void:
