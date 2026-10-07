@@ -3984,8 +3984,11 @@ func iniciar_jogo(mostrar_banner_inicial: bool = true) -> void:
 
 
 func _input(event: InputEvent) -> void:
+	# SELECT (CONFIGURAÇÃO) NA PARTIDA NÃO FAZ NADA: trocar de cena aqui
+	# jogava fora uma partida paga. A configuração abre pelo SELECT na
+	# abertura, no menu e na demo. (eh_config nunca é verdade para um botão
+	# de jogada: nenhuma jogada é engolida aqui.)
 	if ArcadeControls.eh_config(event):
-		get_tree().change_scene("res://scene/configuracao_tvbox.tscn")
 		get_viewport().set_input_as_handled()
 		return
 	if modal_inatividade_ativo:

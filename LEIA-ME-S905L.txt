@@ -1,4 +1,4 @@
-DRAGON BOWLING - VERSAO TV BOX S905L (ANDROID 7.1) - BUILD 7
+DRAGON BOWLING - VERSAO TV BOX S905L (ANDROID 7.1) - BUILD 8
 ============================================================
 
 PARA QUAL MAQUINA E ESTA VERSAO
@@ -17,8 +17,35 @@ configurar os botoes da Zero Delay e sons. Conferido
 lado a lado com a versao 4.6 rodando o mesmo roteiro de jogadas: mesmas
 telas e o mesmo resultado (29 pinos, 2 strikes).
 
-O QUE A BUILD 7 CORRIGE
+O QUE A BUILD 8 CORRIGE
 -----------------------
+1. A JOGADA DA BOLA ABRIA A CONFIGURACAO NA ABERTURA. Ate a build 6 o R2
+   da placa nem chegava ao jogo (o mapa padrao do Android o descartava).
+   A build 7 passou a entregar todos os botoes - e o R2 caiu direto na
+   configuracao, que desde a build 3 estava ligada a ele.
+2. AGORA SO O SELECT ABRE A CONFIGURACAO: na abertura, no menu e na demo.
+   La dentro, o SELECT fecha sem mudar nada. Na partida o SELECT nao faz
+   nada (nao joga fora a partida de ninguem). Segurar botao 10 s, R2, L3 e
+   as jogadas NAO abrem mais a configuracao.
+3. AS TECLAS FICAM COMO ESTAVAM: Quadrado, X, Bolinha, Triangulo e R1 com
+   as mesmas jogadas; o R2 tambem vale como jogada extrema.
+4. NENHUM BOTAO DE JOGADA ABRE A CONFIGURACAO, nem que uma configuracao
+   gravada antes diga o contrario (o mesmo botao gravado em dois passos).
+   A configuracao gravada antes continua valendo: o botao do passo SELECT
+   vira o da configuracao. O SELECT de fabrica (botao 10 / tecla 5) vale
+   sempre junto.
+5. Conferido no Godot 3.6.2 sem configuracao gravada, com uma gravada na
+   build 7 e com uma em conflito: 21 botoes e teclas apertados na abertura
+   e no menu (quadrado, X, bolinha, triangulo, R1, R2, L1, L2, L3, R3,
+   A S D F G 9 C V X) nao abrem a configuracao; segurar 11 s nao abre;
+   SELECT (botao 10 e tecla 5) abre na abertura e no menu e fecha la
+   dentro; na partida o SELECT nao sai e o R2 lanca a jogada extrema.
+   50 conferencias em cada caso, nenhuma falha.
+6. O diagrama da placa com a funcao de cada botao esta em
+   docs\ZERO_DELAY_BOLICHE.png (para imprimir e deixar na maquina).
+
+O QUE A BUILD 7 CORRIGIU
+------------------------
 1. R1 (JOGADA LATERAL) QUE NAO CHEGAVA NO JOGO. No Android o Godot passa
    a Zero Delay pelo mapa "Default Android Gamepad", que so conhece
    A/B/X/Y, L1/R1, SELECT/START e L3/R3: qualquer outro botao (L2/R2 como
@@ -107,18 +134,21 @@ Pro Ultra).
 
 BOTOES (ZERO DELAY)
 -------------------
-Iguais aos da Pro Ultra: STR = 1/Espaco, Quadrado = A, X = S, Bolinha = D,
-Triangulo = F, R1 = G, SELECT = 5.
-CONFIGURACAO: R2. Apertando o R2 na abertura, no menu, na demo ou na
-partida, abre a tela de configurar os botoes; apertando o R2 de novo la
+Iguais aos da Pro Ultra: STR = START, Quadrado = jogada esquerda, X = meio
+esquerdo, Bolinha = strike (centro), Triangulo = meio direito, R1 e R2 =
+jogadas extremas, SELECT = CONFIGURACAO. No modo teclado: STR = 1/Espaco,
+Quadrado = A, X = S, Bolinha = D, Triangulo = F, R1 = G, SELECT = 5.
+CONFIGURACAO: SO O SELECT. Apertando o SELECT na abertura, no menu ou na
+demo, abre a tela de configurar os botoes; apertando o SELECT de novo la
 dentro, ela FECHA sem mudar nada. Se algum botao cair na funcao errada:
-abra com o R2 (ou SEGURE qualquer botao da placa 10 segundos no menu) e
-aperte na ordem pedida. Fica gravado na TV Box.
+abra com o SELECT e aperte na ordem pedida (STR, Quadrado, X, Bolinha,
+Triangulo, R1; SELECT e R2 sao opcionais). Fica gravado na TV Box.
+Diagrama: docs\ZERO_DELAY_BOLICHE.png.
 
 BORDA PRETA EM VOLTA DA IMAGEM
 ------------------------------
 O jogo ocupa a tela inteira que o Android entrega (conferido a 1920x1080
-com a imagem girada). Para ver de onde vem uma borda: aperte R2 e olhe a
+com a imagem girada). Para ver de onde vem uma borda: aperte SELECT e olhe a
 MOLDURA VERDE da tela de configuracao, que fica exatamente na borda da
 imagem do jogo, e a linha "TELA: JOGO ... ANDROID ...".
 - Preto POR FORA da moldura verde: a borda vem da TV Box (a imagem

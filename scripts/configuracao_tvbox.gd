@@ -13,8 +13,8 @@ const MENU := "res://scene/Main Menu.tscn"
 const FONTE := "res://fonts/painel_arcade.ttf"
 const ESPERA_MAXIMA_MS := 20000
 ## Depois dos botões obrigatórios, SELECT e R2 são pulados sozinhos.
-## O R2 (botão de configuração) FECHA esta tela sem mudar nada — menos no
-## passo em que ele mesmo está sendo gravado.
+## O SELECT (botão de configuração) FECHA esta tela sem mudar nada — menos
+## no passo em que ele mesmo está sendo gravado.
 const PULAR_OPCIONAL_MS := 4000
 
 var _passo := 0
@@ -145,10 +145,11 @@ func _input(event: InputEvent) -> void:
 		if codigo == _segurando:
 			_segurando = ""
 		return
-	# R2 fecha a configuração sem mudar nada (menos no passo do próprio R2,
-	# em que o aperto é o que está sendo gravado).
+	# SELECT fecha a configuração sem mudar nada (menos no passo do próprio
+	# SELECT, em que o aperto é o que está sendo gravado).
 	var passo_atual = ArcadeControls.SEQUENCIA[_passo][0] if _passo < ArcadeControls.SEQUENCIA.size() else ""
-	if passo_atual != "input_teste" and ArcadeControls.eh_config(event):
+	if passo_atual != "input_teste" and _segurando == "" and not codigo in _botoes.values() \
+			and ArcadeControls.eh_config(event):
 		_terminado = true
 		_pedido.text = "FECHADO"
 		_dica.text = "NADA FOI ALTERADO"
@@ -175,6 +176,6 @@ func _concluir() -> void:
 	_terminado = true
 	ArcadeControls.gravar(_botoes)
 	_pedido.text = "PRONTO!"
-	_dica.text = "GRAVADO. PARA REFAZER: R2, OU SEGURE UM BOTÃO 10 s NO MENU"
+	_dica.text = "GRAVADO. PARA REFAZER: APERTE SELECT NA ABERTURA OU NO MENU"
 	yield(get_tree().create_timer(1.6), "timeout")
 	get_tree().change_scene(MENU)
