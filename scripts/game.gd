@@ -313,6 +313,10 @@ var aceitando_input: bool = false
 ## Jogada acionada enquanto a pista ainda não aceitava (ver _input).
 var _jogada_pendente: String = ""
 var _jogada_pendente_ms: int = 0
+## De qual round e de qual jogador ela é. Jogada guardada só vale para a
+## próxima tentativa DO MESMO round: acabou o round, ela morre ali.
+var _jogada_pendente_round: int = -1
+var _jogada_pendente_jogador: int = -1
 const VALIDADE_JOGADA_PENDENTE_MS := 10000
 ## Esperas entre jogadas (antes: 1,65 / 2,30 / 2,10 / 0,45 / 2,00 s).
 const ESPERA_FISICA_S := 1.2
@@ -2253,6 +2257,7 @@ func animar_intro_partida() -> void:
 		_g3_estado = yield(_g3_estado, "completed")
 	mostrar_round_banner_intro(1)
 
+	_descartar_jogada_pendente()
 	intro_em_andamento = false
 	aceitando_input = true
 
@@ -4335,22 +4340,41 @@ func _guardar_jogada_pendente(event: InputEvent) -> void:
 	var tecla: String = _obter_tecla_da_action(event)
 	if tecla == "":
 		return
+	# JOGADA SÓ CONTA COM OS PINOS MONTADOS. Na abertura da partida, na
+	# troca de round (ou de jogador) e na montagem do rack, o sensor que
+	# disparar é IGNORADO — antes ele ficava guardado e virava a primeira
+	# jogada do round seguinte, sem o jogador ter jogado.
+	if intro_em_andamento or transicao_round_em_andamento or jogo_finalizado or tela_final_ativa or modal_inatividade_ativo:
+		return
 	# A mesma bola passando por dois sensores vizinhos não vira duas jogadas:
 	# logo depois de um lançamento, outro sensor é a mesma bola.
 	if Time.get_ticks_msec() - _ultima_jogada_ms < MESMA_BOLA_MS:
 		return
 	_jogada_pendente = tecla
 	_jogada_pendente_ms = Time.get_ticks_msec()
+	_jogada_pendente_round = round_atual
+	_jogada_pendente_jogador = jogador_atual
+
+
+func _descartar_jogada_pendente() -> void:
+	_jogada_pendente = ""
+	_jogada_pendente_round = -1
+	_jogada_pendente_jogador = -1
 
 
 func _soltar_jogada_pendente() -> void:
 	if Time.get_ticks_msec() - _jogada_pendente_ms > VALIDADE_JOGADA_PENDENTE_MS or jogo_finalizado or tela_final_ativa:
-		_jogada_pendente = ""
+		_descartar_jogada_pendente()
+		return
+	# Guardada num round (ou na vez de outro jogador) que já acabou: não é
+	# jogada deste round, é sobra do anterior.
+	if _jogada_pendente_round != round_atual or _jogada_pendente_jogador != jogador_atual:
+		_descartar_jogada_pendente()
 		return
 	if intro_em_andamento or not aceitando_input or transicao_round_em_andamento or jogando_trajeto:
 		return
 	var tecla = _jogada_pendente
-	_jogada_pendente = ""
+	_descartar_jogada_pendente()
 	executar_jogada_por_tecla(tecla)
 
 
@@ -5459,6 +5483,7 @@ func finalizar_jogada() -> void:
 	if foi_strike:
 		registrar_resultado_round(10, true, false)
 		transicao_round_em_andamento = true
+		_descartar_jogada_pendente()
 		yield(get_tree().create_timer(ESPERA_STRIKE_S), "timeout")
 		_g3_estado = avancar_round()
 		if _g3_estado is GDScriptFunctionState:
@@ -5471,6 +5496,7 @@ func finalizar_jogada() -> void:
 		registrar_resultado_round(pinos_derrubados_no_round, false, foi_spare)
 
 		transicao_round_em_andamento = true
+		_descartar_jogada_pendente()
 		yield(get_tree().create_timer(ESPERA_ROUND_FECHADO_S), "timeout")
 		_g3_estado = avancar_round()
 		if _g3_estado is GDScriptFunctionState:
@@ -5494,6 +5520,7 @@ func finalizar_jogada() -> void:
 	registrar_resultado_round(pinos_derrubados_no_round, false, false)
 
 	transicao_round_em_andamento = true
+	_descartar_jogada_pendente()
 	yield(get_tree().create_timer(ESPERA_FIM_DE_ROUND_S), "timeout")
 	_g3_estado = avancar_round()
 	if _g3_estado is GDScriptFunctionState:
@@ -5505,6 +5532,7 @@ func avancar_round() -> void:
 	var _g3_estado = null
 	aceitando_input = false
 	transicao_round_em_andamento = true
+	_descartar_jogada_pendente()
 	ultima_tecla_jogada = ""
 	processando_impacto = false
 	aguardando_fim_bola = false
@@ -5550,6 +5578,9 @@ func avancar_round() -> void:
 	atualizar_placar()
 	atualizar_mapa_visual()
 
+	# O rack novo está montado: daqui em diante a jogada conta. O que o
+	# sensor marcou durante a troca fica para trás.
+	_descartar_jogada_pendente()
 	transicao_round_em_andamento = false
 	aceitando_input = true
 

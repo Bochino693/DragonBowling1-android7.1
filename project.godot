@@ -36,6 +36,7 @@ default_bus_layout=""
 [autoload]
 
 Compat="*res://scripts/compat_g3.gd"
+Guardiao="*res://autoload/Guardiao.gd"
 Tela="*res://autoload/Tela.gd"
 MusicManager="*res://scripts/music_manager.gd"
 GameConfig="*res://autoload/GameConfig.gd"

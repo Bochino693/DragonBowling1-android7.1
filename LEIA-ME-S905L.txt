@@ -1,4 +1,4 @@
-DRAGON BOWLING - VERSAO TV BOX S905L (ANDROID 7.1) - BUILD 9
+DRAGON BOWLING - VERSAO TV BOX S905L (ANDROID 7.1) - BUILD 10
 ============================================================
 
 PARA QUAL MAQUINA E ESTA VERSAO
@@ -17,8 +17,34 @@ configurar os botoes da Zero Delay e sons. Conferido
 lado a lado com a versao 4.6 rodando o mesmo roteiro de jogadas: mesmas
 telas e o mesmo resultado (29 pinos, 2 strikes).
 
-O QUE A BUILD 9 CORRIGE (JOGADA FIRME)
---------------------------------------
+O QUE A BUILD 10 CORRIGE (JOGADA SO COM OS PINOS MONTADOS E TELA LIGADA)
+-----------------------------------------------------------------------
+1. A BOLA DO FIM DO ROUND VIRAVA A 1a JOGADA DO ROUND SEGUINTE. O jogo
+   guardava o sensor acionado enquanto a pista nao aceitava jogada (para
+   nao perder a bola entre uma tentativa e outra) e guardava tambem o que
+   chegava na troca de round e na montagem do rack. Agora a jogada
+   guardada so vale para a proxima bola DO MESMO ROUND E DO MESMO
+   JOGADOR. Acabou o round (strike, spare ou ultima bola), o que o sensor
+   marcar e ignorado ate o rack novo estar montado; na abertura da
+   partida tambem.
+2. Conferido no Godot 3.6.2 com um piloto automatico: tecla apertada na
+   montagem, na ultima bola do round e na troca de round NAO vira jogada;
+   tecla apertada durante a bola 1 continua valendo como bola 2; o round
+   2 comeca so com a jogada nova.
+3. TELA SEMPRE LIGADA: o pedido de "manter a tela acesa" agora e refeito
+   sozinho a cada 15 s e sempre que o jogo volta para a frente ou ganha o
+   foco (antes era feito uma vez so, no comeco). autoload/Guardiao.gd.
+4. O JOGO NUNCA FICA SEM TELA: se uma troca de tela falhar e o jogo ficar
+   sem cena (tela preta com o jogo vivo), em 3 s ele volta sozinho para a
+   abertura. Pedidos do sistema para fechar sao ignorados.
+5. NA TV BOX, PARA NAO APAGAR NUNCA: em Configuracoes do Android deixe
+   "Protetor de tela/Daydream" e "Suspender/Dormir" em NUNCA; na TV,
+   desligue o "Desligamento automatico/Eco" (muitas TVs se desligam
+   sozinhas depois de algumas horas sem usar o controle remoto e a tela
+   fica preta).
+
+O QUE A BUILD 9 CORRIGIU (JOGADA FIRME)
+---------------------------------------
 1. A JOGADA "PUXAVA" O PINO MAIS PROXIMO. Com a faixa da tecla ja vazia,
    o jogo escolhia outro pino para derrubar: o Z derrubava o 7, depois o
    4, depois o 2; o B, o 10, depois o 6, depois o 3; o X e o V caiam em
