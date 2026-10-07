@@ -1,4 +1,4 @@
-DRAGON BOWLING - VERSAO TV BOX S905L (ANDROID 7.1) - BUILD 8
+DRAGON BOWLING - VERSAO TV BOX S905L (ANDROID 7.1) - BUILD 9
 ============================================================
 
 PARA QUAL MAQUINA E ESTA VERSAO
@@ -17,8 +17,28 @@ configurar os botoes da Zero Delay e sons. Conferido
 lado a lado com a versao 4.6 rodando o mesmo roteiro de jogadas: mesmas
 telas e o mesmo resultado (29 pinos, 2 strikes).
 
-O QUE A BUILD 8 CORRIGE
------------------------
+O QUE A BUILD 9 CORRIGE (JOGADA FIRME)
+--------------------------------------
+1. A JOGADA "PUXAVA" O PINO MAIS PROXIMO. Com a faixa da tecla ja vazia,
+   o jogo escolhia outro pino para derrubar: o Z derrubava o 7, depois o
+   4, depois o 2; o B, o 10, depois o 6, depois o 3; o X e o V caiam em
+   qualquer pino que sobrasse. Jogar de novo na mesma tecla nunca errava.
+2. AGORA CADA TECLA TEM A SUA FAIXA E CADA PINO E DE UMA FAIXA SO:
+     Z (esquerda) ......... 7
+     X (meio esquerdo) .... 2, 4, 8
+     C (centro) ........... 1, 5
+     V (meio direito) ..... 3, 6, 9
+     B / R1 / R2 (extremas) 10
+   A bola so comeca a derrubar por um pino da faixa dela (depois um pino
+   ainda pode derrubar o vizinho, como sempre). FAIXA VAZIA = A BOLA PASSA
+   RETO: "PRA FORA!" (ERRO).
+3. Conferido no Godot 3.6.2 com o piloto de jogadas: Z,Z,Z = 7, erro,
+   erro; B,B,B = 10, erro, erro; X,X,X = 6 pinos, erro, erro; V,V,V = 6
+   pinos, erro, erro; C = strike; X,V,C = 6 pinos, 6-9-10, 1 (spare);
+   V,X,Z = 6 pinos, 4-7-8, erro. Igual a versao da Pro Ultra.
+
+O QUE A BUILD 8 CORRIGIU
+------------------------
 1. A JOGADA DA BOLA ABRIA A CONFIGURACAO NA ABERTURA. Ate a build 6 o R2
    da placa nem chegava ao jogo (o mapa padrao do Android o descartava).
    A build 7 passou a entregar todos os botoes - e o R2 caiu direto na

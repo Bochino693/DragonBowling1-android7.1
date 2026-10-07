@@ -2257,6 +2257,51 @@ func animar_intro_partida() -> void:
 	aceitando_input = true
 
 
+## A FAIXA DE CADA TECLA: os pinos que a bola daquela tecla alcança de
+## frente (posição do pino na pista contra o ponto em que a bola de cada
+## tecla chega). Cada pino é de UMA faixa só:
+##   Z (esquerda) ...... 7
+##   X (meio esquerdo) . 2, 4, 8
+##   C (centro) ........ 1, 5
+##   V (meio direito) .. 3, 6, 9
+##   B (extremas) ...... 10
+## A bola só começa a derrubar por um pino da faixa dela (depois um pino
+## pode derrubar o vizinho, como sempre). Faixa vazia = a bola passa reto:
+## ERRO. Antes, com a faixa vazia, a jogada "puxava" o pino mais próximo
+## (Z derrubava o 7, depois o 4, depois o 2; X e V caíam em qualquer pino
+## que sobrasse) — jogar de novo na mesma tecla nunca errava.
+const PINOS_DA_FAIXA = {
+	"Z": [7],
+	"X": [2, 4, 8],
+	"C": [1, 5],
+	"V": [3, 6, 9],
+	"B": [10],
+}
+
+
+## Os pinos em pé da faixa da tecla, do mais perto do jogador ao do fundo.
+func _pinos_da_faixa_em_pe(tecla: String) -> Array:
+	var lista: Array = []
+	for numero in PINOS_DA_FAIXA.get(tecla, []):
+		var p = obter_pino_por_numero(int(numero))
+		if p != null and not p.derrubado:
+			lista.append(p)
+	return lista
+
+
+## O PRIMEIRO PINO QUE A BOLA TOCA: o primeiro do caminho da bola que é da
+## faixa da tecla; sem nenhum no caminho, o da faixa mais perto do jogador.
+## Nunca um pino de fora da faixa.
+func _primeiro_pino_da_faixa(ponto_impacto: Vector2):
+	var da_faixa: Array = _pinos_da_faixa_em_pe(ultima_tecla_jogada)
+	if da_faixa.empty():
+		return null
+	for item in obter_pinos_no_caminho_bola(ponto_impacto):
+		if item["pin"] in da_faixa:
+			return item["pin"]
+	return da_faixa[0]
+
+
 func obter_pino_por_lista_preferida(lista: Array, ponto_impacto: Vector2):
 	var melhor = null
 	var melhor_score: float = INF
@@ -2314,13 +2359,13 @@ func obter_pino_mais_proximo_livre(ponto_impacto: Vector2):
 
 func _obter_pin_forcado_da_jogada(ponto_impacto: Vector2):
 	if ultima_tecla_jogada == "Z":
-		for numero in [7, 4, 2]:
+		for numero in PINOS_DA_FAIXA["Z"]:
 			var p = obter_pino_por_numero(numero)
 			if p != null and not p.derrubado:
 				return p
 
 	if ultima_tecla_jogada == "B":
-		for numero in [10, 6, 3]:
+		for numero in PINOS_DA_FAIXA["B"]:
 			var p = obter_pino_por_numero(numero)
 			if p != null and not p.derrubado:
 				return p
@@ -2847,26 +2892,9 @@ func obter_primeiro_pin_atingido_fisico(ponto_impacto: Vector2):
 	if not impactos.empty():
 		return impactos[0]["pin"]
 
-	# fallback só para bordas e médias, nunca para C roubar lateral
-	match ultima_tecla_jogada:
-		"Z":
-			return obter_pin_extremo("Z")
-		"X":
-			return obter_pino_alvo_medio("X")
-		"V":
-			return obter_pino_alvo_medio("V")
-		"B":
-			return obter_pin_extremo("B")
-		"C":			   
-			var p1 = obter_pino_por_numero(1)
-			if p1 != null and not p1.derrubado:
-				return p1
-			
-			var p5 = obter_pino_por_numero(5)
-			if p5 != null and not p5.derrubado:
-				return p5
-
-	return null
+	# Fora do caminho, só um pino da faixa da tecla (nunca "puxar" outro).
+	var da_faixa: Array = _pinos_da_faixa_em_pe(ultima_tecla_jogada)
+	return da_faixa[0] if not da_faixa.empty() else null
 
 func _aplicar_impulso_realista(principal, ponto_impacto: Vector2, forca: float, lateral: float, spin: float) -> void:
 	if principal == null:
@@ -3189,21 +3217,10 @@ func contar_pinos_em_pe() -> int:
 
 
 func obter_pin_extremo(tecla: String):
-	if tecla == "Z":
-		for numero in [7, 4, 2]:
-			var p_esq = obter_pino_por_numero(numero)
-			if p_esq != null and not p_esq.derrubado:
-				return p_esq
+	if tecla != "Z" and tecla != "B":
 		return null
-
-	if tecla == "B":
-		for numero in [10, 6, 3]:
-			var p_dir = obter_pino_por_numero(numero)
-			if p_dir != null and not p_dir.derrubado:
-				return p_dir
-		return null
-
-	return null
+	var da_faixa: Array = _pinos_da_faixa_em_pe(tecla)
+	return da_faixa[0] if not da_faixa.empty() else null
 
 
 func obter_pino_alvo_medio(tecla: String):
@@ -3214,18 +3231,19 @@ func obter_pino_alvo_medio(tecla: String):
 	var prioridade: Array = []
 
 	if tecla == "X":
-		prioridade = [8, 4, 2, 5, 7]
+		prioridade = [8, 4, 2]
 	elif tecla == "V":
-		prioridade = [9, 6, 3, 5, 10]
+		prioridade = [9, 6, 3]
 	else:
-		prioridade = [1, 5, 2, 3]
+		prioridade = [1, 5]
 
 	for alvo_num in prioridade:
 		for p in vivos:
 			if p != null and int(p.numero) == alvo_num:
 				return p
 
-	return vivos[0]
+	# Nenhum pino da faixa em pé: nada a mirar (a jogada vai errar).
+	return null
 
 
 func obter_unico_pino_restante():
@@ -4823,13 +4841,8 @@ func _on_bola_impacto_no_deck(dados: Dictionary) -> void:
 		processando_impacto = false
 		return
 
-	var principal = obter_primeiro_pin_atingido_fisico(ponto_impacto)
-	# Nas extremidades o botao sempre mira o pino externo ainda em pe.
-	if ultima_tecla_jogada in ["Z", "B"]:
-		principal = obter_pin_extremo(ultima_tecla_jogada)
-
-	if principal == null and ultima_tecla_jogada in ["Z", "B"] and _garantia_borda_na_abertura():
-		principal = obter_pin_extremo(ultima_tecla_jogada)
+	# O primeiro pino tocado é sempre um da faixa da tecla (ver PINOS_DA_FAIXA).
+	var principal = _primeiro_pino_da_faixa(ponto_impacto)
 
 	if principal == null:
 		processando_impacto = false
@@ -6482,47 +6495,7 @@ func texto_vencedor_2_players() -> String:
 
 # SUBSTITUA a função _ha_pino_frontal_para_jogada por esta:
 func _ha_pino_frontal_para_jogada(tecla: String) -> bool:
-	match tecla:
-		"Z":
-			# Pinos da coluna esquerda — qualquer um vale
-			for numero in [7, 4, 2]:
-				var pz = obter_pino_por_numero(numero)
-				if pz != null and not pz.derrubado:
-					return true
-			return false
-
-		"B":
-			# Pinos da coluna direita — qualquer um vale
-			for numero in [10, 6, 3]:
-				var pb = obter_pino_por_numero(numero)
-				if pb != null and not pb.derrubado:
-					return true
-			return false
-
-		"X":
-			# Coluna esquerda/centro-esquerda incluindo pino 8 de fundo
-			for numero in [8, 4, 2, 5, 7]:
-				var px = obter_pino_por_numero(numero)
-				if px != null and not px.derrubado:
-					return true
-			return false
-
-		"V":
-			# Coluna direita/centro-direita incluindo pino 9 de fundo
-			for numero in [9, 6, 3, 5, 10]:
-				var pv = obter_pino_por_numero(numero)
-				if pv != null and not pv.derrubado:
-					return true
-			return false
-
-		"C":
-			for numero in [1, 5, 8, 9, 4, 6, 2, 3, 7, 10]:
-				var pc = obter_pino_por_numero(numero)
-				if pc != null and not pc.derrubado:
-					return true
-			return false
-
-	return true
+	return not _pinos_da_faixa_em_pe(tecla).empty()
 
 
 func _tratar_jogada_sem_alvo_na_faixa() -> void:
