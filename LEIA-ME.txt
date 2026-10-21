@@ -96,6 +96,7 @@ O QUE A BUILD 11 TRAZ (MALI-450: LISO, SEM ENGASGO, SEM QUEBRAR)
    START, configuracao (fechando sozinha e pelo SELECT) e partida largada
    (aviso de inatividade). Volta apos volta, memoria, objetos e texturas
    voltam aos mesmos numeros (sem vazamento) e nenhum erro no log.
+   Numeros do teste: docs\TESTE_LONGO_BUILD11.txt.
 
 PARA NAO APAGAR NUNCA (TV BOX E TV)
 -----------------------------------
