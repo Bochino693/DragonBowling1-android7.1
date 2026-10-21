@@ -75,7 +75,7 @@ func _dados_de(caminho: String) -> DynamicFontData:
 ## outros a cor mora na fonte.
 func fonte_para(f, tamanho: int, contorno: int = 0, cor_contorno = null) -> DynamicFont:
 	var dados = dados_da_fonte(f)
-	tamanho = int(max(1, tamanho))
+	tamanho = tamanho_efetivo(tamanho)
 	var raio = int(ceil(max(0, contorno) * 0.5))
 	var chave = "%s|%d|%d|%s" % [dados.resource_path if dados != null else "", tamanho, raio, str(cor_contorno)]
 	if _fontes.has(chave):
@@ -124,6 +124,7 @@ func estilo_de(no: Control) -> Array:
 
 func _aplicar_fonte(no: Control) -> void:
 	var e = estilo_de(no)
+	no.set_meta("g3_fator", float(max(1, e[1])) / float(tamanho_efetivo(e[1])))
 	if no is Label or e[2] <= 0:
 		no.add_font_override("font", fonte_para(e[0], e[1], e[2]))
 		return
@@ -142,6 +143,49 @@ func _fonte_com_cor_do_contorno(no: Control) -> void:
 	var cor = no.get_color("font_outline_modulate") if no.has_color_override("font_outline_modulate") else Color(0, 0, 0, 1)
 	var e = estilo_de(no)
 	no.add_font_override("font", fonte_para(e[0], e[1], e[2], cor))
+
+
+## LETRA GRANDE SEM IMAGEM DE 8 MB.
+##
+## O Godot 3 guarda as letras de cada fonte (fonte + tamanho + contorno)
+## numa imagem quadrada de lado = tamanho x ampliação da tela x 8,
+## arredondado para a potência de 2 de cima. Na TV de 1920 x 1080 a tela
+## do jogo é ampliada 1,25 vez: o "STRIKE!" (108) e o "GAMES" da abertura
+## (120) iam para imagens de 2048 x 2048 - 8 MB cada, duas por fonte (letra
+## e contorno), e CADA letra nova manda a imagem inteira de novo para a
+## Mali-450. Acima do limite a fonte sai no maior tamanho que cabe em
+## 1024 x 1024 (102 nessa TV) e `fator_fonte` diz quanto ampliar o texto
+## para ele ficar do tamanho pedido.
+const LADO_MAXIMO_DAS_LETRAS := 1024.0
+
+
+func tamanho_efetivo(tamanho) -> int:
+	tamanho = int(max(1, tamanho))
+	return int(min(tamanho, maior_tamanho_de_letra()))
+
+
+func maior_tamanho_de_letra() -> int:
+	return int(max(16, floor(LADO_MAXIMO_DAS_LETRAS / (8.0 * ampliacao_da_tela()))))
+
+
+## A ampliação que o Godot usa nas letras (SceneTree: tamanho da janela /
+## tamanho lógico da tela, no esticar "2d").
+func ampliacao_da_tela() -> float:
+	var raiz = get_tree().root if is_inside_tree() else null
+	if raiz == null:
+		return 1.0
+	var logico: Vector2 = raiz.get_size_override()
+	if logico.x <= 0.0:
+		return 1.0
+	return max(0.25, raiz.size.x / logico.x)
+
+
+## Quanto ampliar um texto cuja fonte saiu menor que o tamanho pedido
+## (1.0 quase sempre; ver `tamanho_efetivo`).
+func fator_fonte(no: Node) -> float:
+	if no != null and no.has_meta("g3_fator"):
+		return float(no.get_meta("g3_fator"))
+	return 1.0
 
 
 # ------------------------------------------------ carga em segundo plano

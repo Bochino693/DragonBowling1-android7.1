@@ -1,5 +1,7 @@
-# Godot 3.6 (versão S905L): cache de importação e o modelo Android que o
-# GERAR_APK extrai no PC.
+# Godot 3.6 (versão Mali-450): cache de importação. (android/build e
+# android/.build_version eram do gerador antigo, com Gradle - até a build 10;
+# o modelo Android de agora é o android/modelo_android/extras.zip, que vai
+# no git.)
 .import/
 /android/build/
 /android/.build_version

@@ -24,8 +24,9 @@ func _ready() -> void:
 		push_error("Nó 'Game' não encontrado dentro da demo.")
 		return
 
-	if game.has_method("iniciar_jogo"):
-		game.iniciar_jogo(false)
+	# A pista já começa a partida sozinha no _ready dela (com a animação de
+	# entrada). Chamar iniciar_jogo de novo aqui recriava os 10 pinos no
+	# meio dessa animação.
 
 	demo_ativa = true
 	demo_encerrando = false
@@ -97,8 +98,8 @@ func _process(delta: float) -> void:
 
 func _input(event: InputEvent) -> void:
 	if ArcadeControls.eh_config(event):
-		get_tree().change_scene("res://scene/configuracao_tvbox.tscn")
 		get_viewport().set_input_as_handled()
+		ArcadeControls.ir_para_configuracao()
 		return
 	if not demo_ativa:
 		return
@@ -192,12 +193,22 @@ func _trocar_cena_seguro(caminho: String) -> void:
 	if tree == null:
 		return
 
+	# Mesmo jeito do START do menu: a cena nova é montada e entra no lugar
+	# desta por baixo da cortina (o menu vem da memória, carregado na
+	# inicialização). Sem change_scene lendo do disco na hora da troca.
+	var cena: PackedScene = GameConfig.precarregados.get(caminho) as PackedScene
+	if cena == null:
+		cena = load(caminho) as PackedScene
 	_g3_estado = Cortina.fechar(tree)
 	if _g3_estado is GDScriptFunctionState:
 		_g3_estado = yield(_g3_estado, "completed")
-	var erro: int = tree.change_scene(caminho)
+	var nova: Node = cena.instance() if cena != null else null
+	if nova != null:
+		tree.root.add_child(nova)
+		tree.current_scene = nova
+		queue_free()
 	Cortina.abrir(tree)
-	if erro != OK:
+	if nova == null:
 		push_error("Erro ao trocar cena para: " + caminho)
 
 		demo_encerrando = false

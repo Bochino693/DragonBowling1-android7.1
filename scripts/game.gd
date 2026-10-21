@@ -4152,6 +4152,12 @@ func _animar_label_arcade(lbl: Label, cor: Color, strike: bool = false) -> void:
 		escala_inicio = Vector2(0.44, 0.44)
 		escala_pico = Vector2(1.28, 1.28)
 
+	# Fonte grande no limite de tamanho (o "STRIKE!" na TV de 1920 x 1080,
+	# ver Compat.tamanho_efetivo): o texto é ampliado para o tamanho pedido.
+	var k = Compat.fator_fonte(lbl)
+	escala_inicio *= k
+	escala_pico *= k
+
 	lbl.rect_scale = escala_inicio
 
 	var tw = create_tween()
@@ -4162,14 +4168,14 @@ func _animar_label_arcade(lbl: Label, cor: Color, strike: bool = false) -> void:
 		.set_trans(Tween.TRANS_BACK)\
 		.set_ease(Tween.EASE_OUT)
 
-	tw.chain().tween_property(lbl, "rect_scale", Vector2.ONE, 0.12)\
+	tw.chain().tween_property(lbl, "rect_scale", Vector2.ONE * k, 0.12)\
 		.set_trans(Tween.TRANS_SINE)\
 		.set_ease(Tween.EASE_OUT)
 
 	tw.chain().tween_interval(0.70)
 
 	tw.chain().tween_property(lbl, "modulate", Color(cor.r, cor.g, cor.b, 0.0), 0.22)
-	tw.parallel().tween_property(lbl, "rect_scale", Vector2(0.96, 0.96), 0.22)
+	tw.parallel().tween_property(lbl, "rect_scale", Vector2(0.96, 0.96) * k, 0.22)
 
 
 
@@ -4808,7 +4814,7 @@ func efeito_spare_total() -> void:
 	layer.add_child(flash_suave)
 
 	if banner_label != null:
-		banner_label.rect_scale = Vector2(0.94, 0.94)
+		banner_label.rect_scale = Vector2(0.94, 0.94) * Compat.fator_fonte(banner_label)
 		banner_label.modulate = Color(1.0, 0.95, 0.82, 0.0)
 
 	var tw: SceneTreeTween = create_tween()
@@ -4818,7 +4824,7 @@ func efeito_spare_total() -> void:
 
 	if banner_label != null:
 		tw.tween_property(banner_label, "modulate", Color(1.0, 0.95, 0.82, 1.0), 0.10)
-		tw.tween_property(banner_label, "rect_scale", Vector2(1.08, 1.08), 0.12)
+		tw.tween_property(banner_label, "rect_scale", Vector2(1.08, 1.08) * Compat.fator_fonte(banner_label), 0.12)
 
 	yield(get_tree().create_timer(0.12), "timeout")
 
@@ -4828,7 +4834,7 @@ func efeito_spare_total() -> void:
 	tw2.tween_property(flash_suave, "color", Color(1.0, 0.84, 0.34, 0.0), 0.18)
 
 	if banner_label != null:
-		tw2.tween_property(banner_label, "rect_scale", Vector2(1.0, 1.0), 0.16)
+		tw2.tween_property(banner_label, "rect_scale", Vector2(1.0, 1.0) * Compat.fator_fonte(banner_label), 0.16)
 
 	yield(get_tree().create_timer(0.18), "timeout")
 
@@ -5390,7 +5396,7 @@ func efeito_strike_total() -> void:
 	layer.add_child(flash_branco)
 
 	if banner_label != null:
-		banner_label.rect_scale = Vector2(0.86, 0.86)
+		banner_label.rect_scale = Vector2(0.86, 0.86) * Compat.fator_fonte(banner_label)
 		banner_label.modulate = Color(1.0, 0.96, 0.72, 0.0)
 
 	var tw: SceneTreeTween = create_tween()
@@ -5401,7 +5407,7 @@ func efeito_strike_total() -> void:
 
 	if banner_label != null:
 		tw.tween_property(banner_label, "modulate", Color(1.0, 0.96, 0.72, 1.0), 0.08)
-		tw.tween_property(banner_label, "rect_scale", Vector2(1.18, 1.18), 0.11)
+		tw.tween_property(banner_label, "rect_scale", Vector2(1.18, 1.18) * Compat.fator_fonte(banner_label), 0.11)
 
 	yield(get_tree().create_timer(0.09), "timeout")
 
@@ -5412,7 +5418,7 @@ func efeito_strike_total() -> void:
 	tw2.tween_property(flash_quente, "color", Color(1.0, 0.62, 0.12, 0.0), 0.18)
 
 	if banner_label != null:
-		tw2.tween_property(banner_label, "rect_scale", Vector2(0.98, 0.98), 0.14)
+		tw2.tween_property(banner_label, "rect_scale", Vector2(0.98, 0.98) * Compat.fator_fonte(banner_label), 0.14)
 
 	yield(get_tree().create_timer(0.05), "timeout")
 
@@ -5420,7 +5426,7 @@ func efeito_strike_total() -> void:
 	tw3.set_parallel(true)
 
 	if banner_label != null:
-		tw3.tween_property(banner_label, "rect_scale", Vector2(1.06, 1.06), 0.10)
+		tw3.tween_property(banner_label, "rect_scale", Vector2(1.06, 1.06) * Compat.fator_fonte(banner_label), 0.10)
 
 	yield(get_tree().create_timer(0.08), "timeout")
 
@@ -5428,7 +5434,7 @@ func efeito_strike_total() -> void:
 	tw4.set_parallel(true)
 
 	if banner_label != null:
-		tw4.tween_property(banner_label, "rect_scale", Vector2(1.0, 1.0), 0.12)
+		tw4.tween_property(banner_label, "rect_scale", Vector2(1.0, 1.0) * Compat.fator_fonte(banner_label), 0.12)
 
 	yield(get_tree().create_timer(0.20), "timeout")
 

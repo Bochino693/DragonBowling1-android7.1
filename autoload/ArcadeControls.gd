@@ -78,6 +78,7 @@ var _veredito_visto := false
 
 ## Pedido da demo: o menu abre já perguntando 1 ou 2 jogadores.
 var abrir_selecao_de_jogadores := false
+var _indo_para_configuracao := false
 
 ## Teclas do controle remoto da TV Box: nunca viram jogada.
 const TECLAS_DO_CONTROLE_REMOTO := [
@@ -124,6 +125,25 @@ func _notification(what: int) -> void:
 ## outra função: na partida valem como R1 (tecla_jogada) e no assistente
 ## podem ser gravados em qualquer passo.
 const MAPA_COMPLETO_ANDROID := "leftx:a0,lefty:a1,rightx:a2,righty:a3,lefttrigger:a4,righttrigger:a5,dpup:h0.1,dpdown:h0.4,dpleft:h0.8,dpright:h0.2,a:b0,b:b1,x:b2,y:b3,back:b4,guide:b5,start:b6,leftstick:b7,rightstick:b8,leftshoulder:b9,rightshoulder:b10,dpup:b11,dpdown:b12,dpleft:b13,dpright:b14,lefttrigger:b15,righttrigger:b16,misc1:b17,paddle1:b18,misc1:b19,paddle2:b20,paddle3:b21,paddle4:b22,touchpad:b23,misc1:b24,misc1:b25,misc1:b26,misc1:b27,misc1:b28,misc1:b29,misc1:b30,misc1:b31,misc1:b32,misc1:b33,misc1:b34,misc1:b35,platform:Android"
+
+## A PORTA ÚNICA DA CONFIGURAÇÃO (abertura, menu e demo): sempre adiada -
+## nunca no meio de um _input - e atrás da cortina, como as outras trocas
+## de tela.
+func ir_para_configuracao() -> void:
+	if _indo_para_configuracao:
+		return
+	_indo_para_configuracao = true
+	call_deferred("_ir_para_configuracao_adiado")
+
+
+func _ir_para_configuracao_adiado() -> void:
+	var arvore = get_tree()
+	arvore.paused = false
+	var estado = Cortina.trocar_para(arvore, CENA_CONFIGURACAO)
+	if estado is GDScriptFunctionState:
+		yield(estado, "completed")
+	_indo_para_configuracao = false
+
 
 func _liberar_todos_os_botoes() -> void:
 	if OS.get_name() != "Android":
@@ -378,4 +398,4 @@ func _input(event: InputEvent) -> void:
 	var atual = get_tree().current_scene
 	if atual != null and atual.filename == CENA_ABERTURA:
 		get_tree().set_input_as_handled()
-		get_tree().call_deferred("change_scene", CENA_CONFIGURACAO)
+		ir_para_configuracao()
