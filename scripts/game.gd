@@ -313,6 +313,10 @@ var aceitando_input: bool = false
 ## Jogada acionada enquanto a pista ainda não aceitava (ver _input).
 var _jogada_pendente: String = ""
 var _jogada_pendente_ms: int = 0
+## De qual round e de qual jogador ela é. Jogada guardada só vale para a
+## próxima tentativa DO MESMO round: acabou o round, ela morre ali.
+var _jogada_pendente_round: int = -1
+var _jogada_pendente_jogador: int = -1
 const VALIDADE_JOGADA_PENDENTE_MS := 10000
 ## Esperas entre jogadas (antes: 1,65 / 2,30 / 2,10 / 0,45 / 2,00 s).
 const ESPERA_FISICA_S := 1.2
@@ -551,6 +555,8 @@ func _ready() -> void:
 	ajustar_fundo_fullscreen()
 	alinhar_camera_sem_mexer_na_pista()
 	camera_zoom_idle = camera_base_zoom
+	if not get_viewport().is_connected("size_changed", self, "_on_viewport_size_changed"):
+		get_viewport().connect("size_changed", self, "_on_viewport_size_changed")
 
 	_configurar_shader_brilho_fundo()
 	_inicializar_pools_de_audio()
@@ -716,6 +722,7 @@ func _definir_frenesi(v: float) -> void:
 
 
 func _on_viewport_size_changed() -> void:
+	call_deferred("alinhar_camera_sem_mexer_na_pista")
 	call_deferred("_reaplicar_layout_leve")
 
 
@@ -1003,21 +1010,30 @@ func procurar_no_recursivo(root: Node, nome: String) -> Node:
 	return null
 
 
+## A câmera fica SEMPRE no centro da viewport, com zoom 1: assim o mundo
+## (pinos, bola) e a pista (ParallaxBackground, que segue a câmera) saem
+## exatamente onde foram desenhados, ocupando a tela inteira.
+##
+## Antes a câmera copiava a posição da camada "pista" — mas é a própria
+## câmera que move essa camada. Cada nova chamada trocava entre o certo e
+## o errado (câmera em 0,0 = pista empurrada para baixo e para a direita,
+## pinos fora da tela), e na TV Box a ordem dos quadros decidia qual dos
+## dois ficava. Agora a conta não depende de nada que a câmera mexe.
 func alinhar_camera_sem_mexer_na_pista() -> void:
 	if camera_jogo == null:
 		return
 
 	camera_jogo.current = true
+	camera_jogo.anchor_mode = Camera2D.ANCHOR_MODE_DRAG_CENTER
 	camera_jogo.offset = Vector2.ZERO
-
-	if pista_root != null:
-		camera_jogo.global_position = pista_root.global_position
-	else:
-		camera_jogo.global_position = Vector2(512, 768)
+	camera_jogo.zoom = Vector2.ONE
+	camera_jogo.global_position = get_viewport_rect().size * 0.5
+	camera_jogo.force_update_scroll()
 
 	camera_base_pos = camera_jogo.global_position
-	camera_base_zoom = camera_jogo.zoom
-	camera_base_offset = camera_jogo.offset
+	camera_base_zoom = Vector2.ONE
+	camera_base_offset = Vector2.ZERO
+	camera_zoom_idle = Vector2.ONE
 
 
 func criar_10_pinos() -> void:
@@ -2114,7 +2130,8 @@ func preparar_intro_visual() -> void:
 				base_pos = p.get_meta("intro_base_pos")
 
 			# Entra de baixo levemente
-			p.position = base_pos + Vector2(0, 70)
+			# A MÁQUINA BAIXA OS PINOS: entram de cima (ver animar_pinos_em_cascata)
+			p.position = base_pos + Vector2(0, -DESCIDA_MONTAGEM_PINOS)
 
 		if p is CanvasItem:
 			p.modulate = Color(1, 1, 1, 0.0)
@@ -2150,6 +2167,9 @@ func preparar_intro_visual() -> void:
 	_reaplicar_layout_leve()
 
 
+
+## Quanto o rack desce do alto na montagem dos pinos.
+const DESCIDA_MONTAGEM_PINOS := 120.0
 
 func animar_intro_partida() -> void:
 	var _g3_estado = null
@@ -2224,31 +2244,67 @@ func animar_intro_partida() -> void:
 #		tw_mapa_label.tween_property(mapa_label, "modulate:a", 1.0, 0.16).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 #		await tw_mapa_label.finished
 
-	if OS.get_name() == "Android":
-		# A introdução no Android não mantém o controle bloqueado pelo banner.
-		for p in pins:
-			if p == null:
-				continue
-			if p.has_meta("intro_base_pos"):
-				p.position = p.get_meta("intro_base_pos")
-			p.modulate.a = 1.0
-		if bola != null:
-			if bola.has_meta("intro_base_pos"):
-				bola.position = bola.get_meta("intro_base_pos")
-			bola.modulate.a = 1.0
-	else:
-		_g3_estado = animar_pinos_em_cascata()
-		if _g3_estado is GDScriptFunctionState:
-			_g3_estado = yield(_g3_estado, "completed")
-		_g3_estado = animar_bola_entrada()
-		if _g3_estado is GDScriptFunctionState:
-			_g3_estado = yield(_g3_estado, "completed")
-		_g3_estado = mostrar_round_banner_intro(1)
-		if _g3_estado is GDScriptFunctionState:
-			_g3_estado = yield(_g3_estado, "completed")
+	# A MONTAGEM DOS PINOS APARECE TAMBÉM NA TV BOX. Antes o Android pulava
+	# a cascata, a entrada da bola e o banner (os pinos "brotavam" prontos)
+	# só para o banner não segurar o controle. Agora a montagem roda igual
+	# no PC e na TV Box (~1 s), e o banner "ROUND 1" corre por cima sem
+	# prender o controle.
+	_g3_estado = animar_pinos_em_cascata()
+	if _g3_estado is GDScriptFunctionState:
+		_g3_estado = yield(_g3_estado, "completed")
+	_g3_estado = animar_bola_entrada()
+	if _g3_estado is GDScriptFunctionState:
+		_g3_estado = yield(_g3_estado, "completed")
+	mostrar_round_banner_intro(1)
 
+	_descartar_jogada_pendente()
 	intro_em_andamento = false
 	aceitando_input = true
+
+
+## A FAIXA DE CADA TECLA: os pinos que a bola daquela tecla alcança de
+## frente (posição do pino na pista contra o ponto em que a bola de cada
+## tecla chega). Cada pino é de UMA faixa só:
+##   Z (esquerda) ...... 7
+##   X (meio esquerdo) . 2, 4, 8
+##   C (centro) ........ 1, 5
+##   V (meio direito) .. 3, 6, 9
+##   B (extremas) ...... 10
+## A bola só começa a derrubar por um pino da faixa dela (depois um pino
+## pode derrubar o vizinho, como sempre). Faixa vazia = a bola passa reto:
+## ERRO. Antes, com a faixa vazia, a jogada "puxava" o pino mais próximo
+## (Z derrubava o 7, depois o 4, depois o 2; X e V caíam em qualquer pino
+## que sobrasse) — jogar de novo na mesma tecla nunca errava.
+const PINOS_DA_FAIXA = {
+	"Z": [7],
+	"X": [2, 4, 8],
+	"C": [1, 5],
+	"V": [3, 6, 9],
+	"B": [10],
+}
+
+
+## Os pinos em pé da faixa da tecla, do mais perto do jogador ao do fundo.
+func _pinos_da_faixa_em_pe(tecla: String) -> Array:
+	var lista: Array = []
+	for numero in PINOS_DA_FAIXA.get(tecla, []):
+		var p = obter_pino_por_numero(int(numero))
+		if p != null and not p.derrubado:
+			lista.append(p)
+	return lista
+
+
+## O PRIMEIRO PINO QUE A BOLA TOCA: o primeiro do caminho da bola que é da
+## faixa da tecla; sem nenhum no caminho, o da faixa mais perto do jogador.
+## Nunca um pino de fora da faixa.
+func _primeiro_pino_da_faixa(ponto_impacto: Vector2):
+	var da_faixa: Array = _pinos_da_faixa_em_pe(ultima_tecla_jogada)
+	if da_faixa.empty():
+		return null
+	for item in obter_pinos_no_caminho_bola(ponto_impacto):
+		if item["pin"] in da_faixa:
+			return item["pin"]
+	return da_faixa[0]
 
 
 func obter_pino_por_lista_preferida(lista: Array, ponto_impacto: Vector2):
@@ -2308,13 +2364,13 @@ func obter_pino_mais_proximo_livre(ponto_impacto: Vector2):
 
 func _obter_pin_forcado_da_jogada(ponto_impacto: Vector2):
 	if ultima_tecla_jogada == "Z":
-		for numero in [7, 4, 2]:
+		for numero in PINOS_DA_FAIXA["Z"]:
 			var p = obter_pino_por_numero(numero)
 			if p != null and not p.derrubado:
 				return p
 
 	if ultima_tecla_jogada == "B":
-		for numero in [10, 6, 3]:
+		for numero in PINOS_DA_FAIXA["B"]:
 			var p = obter_pino_por_numero(numero)
 			if p != null and not p.derrubado:
 				return p
@@ -2543,31 +2599,42 @@ func _empurrar_pinos_proximos_da_passagem(ponto: Vector2, principal: Node, forca
 
 
 
+## A MONTAGEM DOS PINOS: a máquina baixa o rack, fileira por fileira, do
+## fundo para a frente (7-10, 4-6, 2-3, 1). Cada pino desce do alto, aparece
+## e assenta com um quique curto. Roda igual no PC e na TV Box.
 func animar_pinos_em_cascata() -> void:
-	var ordem: Array = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+	var fileiras: Array = [[7, 8, 9, 10], [4, 5, 6], [2, 3], [1]]
+	var ultimo: SceneTreeTween = null
 
-	for numero in ordem:
-		var p = obter_pino_por_numero(int(numero))
-		if p == null:
-			continue
+	for fileira in fileiras:
+		for numero in fileira:
+			var p = obter_pino_por_numero(int(numero))
+			if p == null or not is_instance_valid(p):
+				continue
 
-		var base_pos: Vector2 = p.position
-		if p.has_meta("intro_base_pos"):
-			base_pos = p.get_meta("intro_base_pos")
+			var base_pos: Vector2 = p.position
+			if p.has_meta("intro_base_pos"):
+				base_pos = p.get_meta("intro_base_pos")
 
-		var tw: SceneTreeTween = create_tween()
-		tw.set_trans(Tween.TRANS_BACK)
-		tw.set_ease(Tween.EASE_OUT)
+			var tw: SceneTreeTween = create_tween()
+			tw.set_parallel(true)
+			if p is CanvasItem:
+				tw.tween_property(p, "modulate:a", 1.0, 0.16)
+			if p is Node2D:
+				tw.tween_property(p, Compat.prop(p, "position"), base_pos, 0.34)\
+					.set_trans(Tween.TRANS_BOUNCE).set_ease(Tween.EASE_OUT)
+			ultimo = tw
+			yield(get_tree().create_timer(0.03), "timeout")
+		yield(get_tree().create_timer(0.07), "timeout")
 
-		if p is CanvasItem:
-			tw.parallel().tween_property(p, "modulate:a", 1.0, 0.14)
-
-		if p is Node2D:
-			tw.parallel().tween_property(p, Compat.prop(p, "position"), base_pos, 0.22)
-
-		yield(get_tree().create_timer(0.045), "timeout")
-
-	yield(get_tree().create_timer(0.12), "timeout")
+	if ultimo != null and ultimo.is_valid():
+		yield(ultimo, "finished")
+	# Garante cada pino exatamente no lugar, mesmo se um quadro longo da TV
+	# Box tiver cortado a animação no meio.
+	for p in pins:
+		if p != null and is_instance_valid(p) and p is Node2D and p.has_meta("intro_base_pos"):
+			p.position = p.get_meta("intro_base_pos")
+			p.modulate.a = 1.0
 
 
 func animar_bola_entrada() -> void:
@@ -2830,26 +2897,9 @@ func obter_primeiro_pin_atingido_fisico(ponto_impacto: Vector2):
 	if not impactos.empty():
 		return impactos[0]["pin"]
 
-	# fallback só para bordas e médias, nunca para C roubar lateral
-	match ultima_tecla_jogada:
-		"Z":
-			return obter_pin_extremo("Z")
-		"X":
-			return obter_pino_alvo_medio("X")
-		"V":
-			return obter_pino_alvo_medio("V")
-		"B":
-			return obter_pin_extremo("B")
-		"C":			   
-			var p1 = obter_pino_por_numero(1)
-			if p1 != null and not p1.derrubado:
-				return p1
-			
-			var p5 = obter_pino_por_numero(5)
-			if p5 != null and not p5.derrubado:
-				return p5
-
-	return null
+	# Fora do caminho, só um pino da faixa da tecla (nunca "puxar" outro).
+	var da_faixa: Array = _pinos_da_faixa_em_pe(ultima_tecla_jogada)
+	return da_faixa[0] if not da_faixa.empty() else null
 
 func _aplicar_impulso_realista(principal, ponto_impacto: Vector2, forca: float, lateral: float, spin: float) -> void:
 	if principal == null:
@@ -3172,21 +3222,10 @@ func contar_pinos_em_pe() -> int:
 
 
 func obter_pin_extremo(tecla: String):
-	if tecla == "Z":
-		for numero in [7, 4, 2]:
-			var p_esq = obter_pino_por_numero(numero)
-			if p_esq != null and not p_esq.derrubado:
-				return p_esq
+	if tecla != "Z" and tecla != "B":
 		return null
-
-	if tecla == "B":
-		for numero in [10, 6, 3]:
-			var p_dir = obter_pino_por_numero(numero)
-			if p_dir != null and not p_dir.derrubado:
-				return p_dir
-		return null
-
-	return null
+	var da_faixa: Array = _pinos_da_faixa_em_pe(tecla)
+	return da_faixa[0] if not da_faixa.empty() else null
 
 
 func obter_pino_alvo_medio(tecla: String):
@@ -3197,18 +3236,19 @@ func obter_pino_alvo_medio(tecla: String):
 	var prioridade: Array = []
 
 	if tecla == "X":
-		prioridade = [8, 4, 2, 5, 7]
+		prioridade = [8, 4, 2]
 	elif tecla == "V":
-		prioridade = [9, 6, 3, 5, 10]
+		prioridade = [9, 6, 3]
 	else:
-		prioridade = [1, 5, 2, 3]
+		prioridade = [1, 5]
 
 	for alvo_num in prioridade:
 		for p in vivos:
 			if p != null and int(p.numero) == alvo_num:
 				return p
 
-	return vivos[0]
+	# Nenhum pino da faixa em pé: nada a mirar (a jogada vai errar).
+	return null
 
 
 func obter_unico_pino_restante():
@@ -3967,8 +4007,11 @@ func iniciar_jogo(mostrar_banner_inicial: bool = true) -> void:
 
 
 func _input(event: InputEvent) -> void:
+	# SELECT (CONFIGURAÇÃO) NA PARTIDA NÃO FAZ NADA: trocar de cena aqui
+	# jogava fora uma partida paga. A configuração abre pelo SELECT na
+	# abertura, no menu e na demo. (eh_config nunca é verdade para um botão
+	# de jogada: nenhuma jogada é engolida aqui.)
 	if ArcadeControls.eh_config(event):
-		get_tree().change_scene("res://scene/configuracao_tvbox.tscn")
 		get_viewport().set_input_as_handled()
 		return
 	if modal_inatividade_ativo:
@@ -4109,6 +4152,12 @@ func _animar_label_arcade(lbl: Label, cor: Color, strike: bool = false) -> void:
 		escala_inicio = Vector2(0.44, 0.44)
 		escala_pico = Vector2(1.28, 1.28)
 
+	# Fonte grande no limite de tamanho (o "STRIKE!" na TV de 1920 x 1080,
+	# ver Compat.tamanho_efetivo): o texto é ampliado para o tamanho pedido.
+	var k = Compat.fator_fonte(lbl)
+	escala_inicio *= k
+	escala_pico *= k
+
 	lbl.rect_scale = escala_inicio
 
 	var tw = create_tween()
@@ -4119,14 +4168,14 @@ func _animar_label_arcade(lbl: Label, cor: Color, strike: bool = false) -> void:
 		.set_trans(Tween.TRANS_BACK)\
 		.set_ease(Tween.EASE_OUT)
 
-	tw.chain().tween_property(lbl, "rect_scale", Vector2.ONE, 0.12)\
+	tw.chain().tween_property(lbl, "rect_scale", Vector2.ONE * k, 0.12)\
 		.set_trans(Tween.TRANS_SINE)\
 		.set_ease(Tween.EASE_OUT)
 
 	tw.chain().tween_interval(0.70)
 
 	tw.chain().tween_property(lbl, "modulate", Color(cor.r, cor.g, cor.b, 0.0), 0.22)
-	tw.parallel().tween_property(lbl, "rect_scale", Vector2(0.96, 0.96), 0.22)
+	tw.parallel().tween_property(lbl, "rect_scale", Vector2(0.96, 0.96) * k, 0.22)
 
 
 
@@ -4297,22 +4346,41 @@ func _guardar_jogada_pendente(event: InputEvent) -> void:
 	var tecla: String = _obter_tecla_da_action(event)
 	if tecla == "":
 		return
+	# JOGADA SÓ CONTA COM OS PINOS MONTADOS. Na abertura da partida, na
+	# troca de round (ou de jogador) e na montagem do rack, o sensor que
+	# disparar é IGNORADO — antes ele ficava guardado e virava a primeira
+	# jogada do round seguinte, sem o jogador ter jogado.
+	if intro_em_andamento or transicao_round_em_andamento or jogo_finalizado or tela_final_ativa or modal_inatividade_ativo:
+		return
 	# A mesma bola passando por dois sensores vizinhos não vira duas jogadas:
 	# logo depois de um lançamento, outro sensor é a mesma bola.
 	if Time.get_ticks_msec() - _ultima_jogada_ms < MESMA_BOLA_MS:
 		return
 	_jogada_pendente = tecla
 	_jogada_pendente_ms = Time.get_ticks_msec()
+	_jogada_pendente_round = round_atual
+	_jogada_pendente_jogador = jogador_atual
+
+
+func _descartar_jogada_pendente() -> void:
+	_jogada_pendente = ""
+	_jogada_pendente_round = -1
+	_jogada_pendente_jogador = -1
 
 
 func _soltar_jogada_pendente() -> void:
 	if Time.get_ticks_msec() - _jogada_pendente_ms > VALIDADE_JOGADA_PENDENTE_MS or jogo_finalizado or tela_final_ativa:
-		_jogada_pendente = ""
+		_descartar_jogada_pendente()
+		return
+	# Guardada num round (ou na vez de outro jogador) que já acabou: não é
+	# jogada deste round, é sobra do anterior.
+	if _jogada_pendente_round != round_atual or _jogada_pendente_jogador != jogador_atual:
+		_descartar_jogada_pendente()
 		return
 	if intro_em_andamento or not aceitando_input or transicao_round_em_andamento or jogando_trajeto:
 		return
 	var tecla = _jogada_pendente
-	_jogada_pendente = ""
+	_descartar_jogada_pendente()
 	executar_jogada_por_tecla(tecla)
 
 
@@ -4746,7 +4814,7 @@ func efeito_spare_total() -> void:
 	layer.add_child(flash_suave)
 
 	if banner_label != null:
-		banner_label.rect_scale = Vector2(0.94, 0.94)
+		banner_label.rect_scale = Vector2(0.94, 0.94) * Compat.fator_fonte(banner_label)
 		banner_label.modulate = Color(1.0, 0.95, 0.82, 0.0)
 
 	var tw: SceneTreeTween = create_tween()
@@ -4756,7 +4824,7 @@ func efeito_spare_total() -> void:
 
 	if banner_label != null:
 		tw.tween_property(banner_label, "modulate", Color(1.0, 0.95, 0.82, 1.0), 0.10)
-		tw.tween_property(banner_label, "rect_scale", Vector2(1.08, 1.08), 0.12)
+		tw.tween_property(banner_label, "rect_scale", Vector2(1.08, 1.08) * Compat.fator_fonte(banner_label), 0.12)
 
 	yield(get_tree().create_timer(0.12), "timeout")
 
@@ -4766,7 +4834,7 @@ func efeito_spare_total() -> void:
 	tw2.tween_property(flash_suave, "color", Color(1.0, 0.84, 0.34, 0.0), 0.18)
 
 	if banner_label != null:
-		tw2.tween_property(banner_label, "rect_scale", Vector2(1.0, 1.0), 0.16)
+		tw2.tween_property(banner_label, "rect_scale", Vector2(1.0, 1.0) * Compat.fator_fonte(banner_label), 0.16)
 
 	yield(get_tree().create_timer(0.18), "timeout")
 
@@ -4803,13 +4871,8 @@ func _on_bola_impacto_no_deck(dados: Dictionary) -> void:
 		processando_impacto = false
 		return
 
-	var principal = obter_primeiro_pin_atingido_fisico(ponto_impacto)
-	# Nas extremidades o botao sempre mira o pino externo ainda em pe.
-	if ultima_tecla_jogada in ["Z", "B"]:
-		principal = obter_pin_extremo(ultima_tecla_jogada)
-
-	if principal == null and ultima_tecla_jogada in ["Z", "B"] and _garantia_borda_na_abertura():
-		principal = obter_pin_extremo(ultima_tecla_jogada)
+	# O primeiro pino tocado é sempre um da faixa da tecla (ver PINOS_DA_FAIXA).
+	var principal = _primeiro_pino_da_faixa(ponto_impacto)
 
 	if principal == null:
 		processando_impacto = false
@@ -5333,7 +5396,7 @@ func efeito_strike_total() -> void:
 	layer.add_child(flash_branco)
 
 	if banner_label != null:
-		banner_label.rect_scale = Vector2(0.86, 0.86)
+		banner_label.rect_scale = Vector2(0.86, 0.86) * Compat.fator_fonte(banner_label)
 		banner_label.modulate = Color(1.0, 0.96, 0.72, 0.0)
 
 	var tw: SceneTreeTween = create_tween()
@@ -5344,7 +5407,7 @@ func efeito_strike_total() -> void:
 
 	if banner_label != null:
 		tw.tween_property(banner_label, "modulate", Color(1.0, 0.96, 0.72, 1.0), 0.08)
-		tw.tween_property(banner_label, "rect_scale", Vector2(1.18, 1.18), 0.11)
+		tw.tween_property(banner_label, "rect_scale", Vector2(1.18, 1.18) * Compat.fator_fonte(banner_label), 0.11)
 
 	yield(get_tree().create_timer(0.09), "timeout")
 
@@ -5355,7 +5418,7 @@ func efeito_strike_total() -> void:
 	tw2.tween_property(flash_quente, "color", Color(1.0, 0.62, 0.12, 0.0), 0.18)
 
 	if banner_label != null:
-		tw2.tween_property(banner_label, "rect_scale", Vector2(0.98, 0.98), 0.14)
+		tw2.tween_property(banner_label, "rect_scale", Vector2(0.98, 0.98) * Compat.fator_fonte(banner_label), 0.14)
 
 	yield(get_tree().create_timer(0.05), "timeout")
 
@@ -5363,7 +5426,7 @@ func efeito_strike_total() -> void:
 	tw3.set_parallel(true)
 
 	if banner_label != null:
-		tw3.tween_property(banner_label, "rect_scale", Vector2(1.06, 1.06), 0.10)
+		tw3.tween_property(banner_label, "rect_scale", Vector2(1.06, 1.06) * Compat.fator_fonte(banner_label), 0.10)
 
 	yield(get_tree().create_timer(0.08), "timeout")
 
@@ -5371,7 +5434,7 @@ func efeito_strike_total() -> void:
 	tw4.set_parallel(true)
 
 	if banner_label != null:
-		tw4.tween_property(banner_label, "rect_scale", Vector2(1.0, 1.0), 0.12)
+		tw4.tween_property(banner_label, "rect_scale", Vector2(1.0, 1.0) * Compat.fator_fonte(banner_label), 0.12)
 
 	yield(get_tree().create_timer(0.20), "timeout")
 
@@ -5426,6 +5489,7 @@ func finalizar_jogada() -> void:
 	if foi_strike:
 		registrar_resultado_round(10, true, false)
 		transicao_round_em_andamento = true
+		_descartar_jogada_pendente()
 		yield(get_tree().create_timer(ESPERA_STRIKE_S), "timeout")
 		_g3_estado = avancar_round()
 		if _g3_estado is GDScriptFunctionState:
@@ -5438,6 +5502,7 @@ func finalizar_jogada() -> void:
 		registrar_resultado_round(pinos_derrubados_no_round, false, foi_spare)
 
 		transicao_round_em_andamento = true
+		_descartar_jogada_pendente()
 		yield(get_tree().create_timer(ESPERA_ROUND_FECHADO_S), "timeout")
 		_g3_estado = avancar_round()
 		if _g3_estado is GDScriptFunctionState:
@@ -5461,6 +5526,7 @@ func finalizar_jogada() -> void:
 	registrar_resultado_round(pinos_derrubados_no_round, false, false)
 
 	transicao_round_em_andamento = true
+	_descartar_jogada_pendente()
 	yield(get_tree().create_timer(ESPERA_FIM_DE_ROUND_S), "timeout")
 	_g3_estado = avancar_round()
 	if _g3_estado is GDScriptFunctionState:
@@ -5472,6 +5538,7 @@ func avancar_round() -> void:
 	var _g3_estado = null
 	aceitando_input = false
 	transicao_round_em_andamento = true
+	_descartar_jogada_pendente()
 	ultima_tecla_jogada = ""
 	processando_impacto = false
 	aguardando_fim_bola = false
@@ -5517,6 +5584,9 @@ func avancar_round() -> void:
 	atualizar_placar()
 	atualizar_mapa_visual()
 
+	# O rack novo está montado: daqui em diante a jogada conta. O que o
+	# sensor marcou durante a troca fica para trás.
+	_descartar_jogada_pendente()
 	transicao_round_em_andamento = false
 	aceitando_input = true
 
@@ -5733,7 +5803,7 @@ func animar_montagem_round_ou_player() -> void:
 		if p is Node2D:
 			var base_pos: Vector2 = p.position
 			p.set_meta("intro_base_pos", base_pos)
-			p.position = base_pos + Vector2(0, 90)
+			p.position = base_pos + Vector2(0, -DESCIDA_MONTAGEM_PINOS)
 
 	_g3_estado = animar_pinos_em_cascata()
 	if _g3_estado is GDScriptFunctionState:
@@ -6462,47 +6532,7 @@ func texto_vencedor_2_players() -> String:
 
 # SUBSTITUA a função _ha_pino_frontal_para_jogada por esta:
 func _ha_pino_frontal_para_jogada(tecla: String) -> bool:
-	match tecla:
-		"Z":
-			# Pinos da coluna esquerda — qualquer um vale
-			for numero in [7, 4, 2]:
-				var pz = obter_pino_por_numero(numero)
-				if pz != null and not pz.derrubado:
-					return true
-			return false
-
-		"B":
-			# Pinos da coluna direita — qualquer um vale
-			for numero in [10, 6, 3]:
-				var pb = obter_pino_por_numero(numero)
-				if pb != null and not pb.derrubado:
-					return true
-			return false
-
-		"X":
-			# Coluna esquerda/centro-esquerda incluindo pino 8 de fundo
-			for numero in [8, 4, 2, 5, 7]:
-				var px = obter_pino_por_numero(numero)
-				if px != null and not px.derrubado:
-					return true
-			return false
-
-		"V":
-			# Coluna direita/centro-direita incluindo pino 9 de fundo
-			for numero in [9, 6, 3, 5, 10]:
-				var pv = obter_pino_por_numero(numero)
-				if pv != null and not pv.derrubado:
-					return true
-			return false
-
-		"C":
-			for numero in [1, 5, 8, 9, 4, 6, 2, 3, 7, 10]:
-				var pc = obter_pino_por_numero(numero)
-				if pc != null and not pc.derrubado:
-					return true
-			return false
-
-	return true
+	return not _pinos_da_faixa_em_pe(tecla).empty()
 
 
 func _tratar_jogada_sem_alvo_na_faixa() -> void:

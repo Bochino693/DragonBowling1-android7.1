@@ -18,6 +18,9 @@ const QUADRO_RAPIDO_MS := 50
 
 var _veu: ColorRect
 var _tween: SceneTreeTween
+## Cada fechar/abrir ganha um número. Um abrir que ficou esperando a cena
+## nova assentar só mexe no véu se ninguém pediu outra coisa depois dele.
+var _vez := 0
 
 
 func _init() -> void:
@@ -44,18 +47,30 @@ static func _obter(arvore: SceneTree):
 
 
 ## Escurece a tela. Use com await antes de trocar a cena.
+##
+## NUNCA FICA ESPERANDO PARA SEMPRE. Antes ele esperava o sinal "finished"
+## da animação; se um abrir() atrasado matasse essa animação (kill não
+## emite "finished"), a troca de tela ficava parada para sempre: o START
+## não fazia mais nada e a máquina parecia travada. Agora ele confere o
+## véu a cada quadro, com um teto de tempo.
 static func fechar(arvore: SceneTree) -> void:
 	var c = _obter(arvore)
+	c._vez += 1
 	if c._tween != null:
 		c._tween.kill()
 	c._tween = c.create_tween()
 	c._tween.tween_property(c._veu, "modulate:a", 1.0, ESCURECER * (1.0 - c._veu.modulate.a))
-	yield(c._tween, "finished")
+	var inicio = Time.get_ticks_msec()
+	while c._veu.modulate.a < 0.999 and Time.get_ticks_msec() - inicio < int(ESCURECER * 1000.0) + 400:
+		yield(arvore, "idle_frame")
+	c._veu.modulate.a = 1.0
 
 
 ## Abre o véu depois que a cena nova já desenhou (a montagem dela aparece).
 static func abrir(arvore: SceneTree) -> void:
 	var c = _obter(arvore)
+	c._vez += 1
+	var minha_vez = c._vez
 	# Os primeiros quadros da cena nova são longos (montagem, primeiras
 	# letras desenhadas). O véu só abre quando a TV Box volta ao ritmo: dois
 	# quadros seguidos rápidos (ou no máximo 2 s), senão a abertura do véu
@@ -68,6 +83,8 @@ static func abrir(arvore: SceneTree) -> void:
 		var agora = Time.get_ticks_msec()
 		rapidos = rapidos + 1 if agora - ultimo < QUADRO_RAPIDO_MS else 0
 		ultimo = agora
+	if not is_instance_valid(c) or c._vez != minha_vez:
+		return          # outra troca começou enquanto esperava: ela manda no véu
 	if c._tween != null:
 		c._tween.kill()
 	c._tween = c.create_tween()

@@ -1,0 +1,173 @@
+DRAGON BOWLING - TV BOX MALI-450 (ANDROID 7.1) - BUILD 11
+=========================================================
+
+PARA QUAL MAQUINA E ESTA VERSAO
+-------------------------------
+TV Box com placa de video Mali-450 ou Mali-400 (so OpenGL ES 2.0): Amlogic
+S905L (1 GB, Android 7.1), TX9 "comum" e parecidas. A versao da Pro Ultra
+(Android 10, Godot 4.6) fica no repositorio boliche-and-raiz; esta, no
+repositorio DragonBowling1-android7.1.
+
+A Mali-450 so tem OpenGL ES 2.0 e todo Godot 4 exige o 3.0: este e o MESMO
+jogo da Pro Ultra 2.1.7 (arte do Dragon) no Godot 3.6.3 - abertura, menu,
+1 ou 2 jogadores, pista, bola, pinos, placar, mapa dos pinos,
+STRIKE/ACERTO/PRA FORA, tela final, recorde, modo demo, configuracao dos
+botoes da Zero Delay e sons.
+
+COMO GERAR E INSTALAR
+---------------------
+1. Extraia o zip numa pasta (de preferencia nova).
+2. Dois cliques em GERAR_APK_AGORA.bat. SEM GRADLE e sem o SDK do Android:
+   na 1a vez ele baixa sozinho o que faltar (Godot 3.6.3, Java, o adb e so
+   o modelo Android do Godot, ~50 MB) e leva de 5 a 20 min; depois, 2 a
+   4 min. Cada passo aparece na janela; o historico fica em
+   build\android\GERACAO-COMPLETA.log (envie esse arquivo se falhar).
+   Opcoes: GERAR_APK_AGORA.bat -Giro -1 (tela de cabeca para baixo),
+   -Giro 0 (sem giro), -Versao 1.0.12-mali450, -Instalar (pelo adb).
+3. O APK sai em APK-Pronto\DragonBowling_Mali450.apk. Copie para o
+   pendrive e instale na TV Box.
+
+1a VEZ COM A BUILD 11: DESINSTALE O DRAGON BOWLING ANTIGO DA TV BOX ANTES
+DE INSTALAR. A build 11 tem a chave de assinatura do proprio projeto
+(tools\android\dragonbowling.keystore) e o Android nao deixa instalar por
+cima de um APK assinado com outra chave (as builds ate a 10 usavam a chave
+de cada PC). Ao desinstalar, os recordes zeram; se a placa tinha botoes
+configurados diferente do padrao, aperte SELECT e configure de novo. Se a
+maquina abria direto no jogo (Dragon Bowling como tela inicial), na
+primeira vez que apertar HOME ou religar a TV Box o Android pergunta qual
+tela inicial usar: escolha Dragon Bowling e SEMPRE. DAI EM DIANTE, todo
+APK novo (gerado em qualquer PC ou o pronto) instala POR CIMA, sem
+desinstalar e sem perder nada.
+
+O pacote continua com.lazersport.dragonbowling.s905l (nao briga com a
+versao da Pro Ultra). Sem nenhuma permissao: o Android nao pergunta nada.
+
+O QUE A BUILD 11 TRAZ (MALI-450: LISO, SEM ENGASGO, SEM QUEBRAR)
+----------------------------------------------------------------
+1. TUDO PRONTO ANTES DA PRIMEIRA IMAGEM. Enquanto a TV Box ainda mostra a
+   imagem de inicializacao, o jogo carrega e guarda o menu, a pista, os
+   sons, a mascara e o brilho da pista, e desenha UMA VEZ cada letra de
+   cada fonte, tamanho e contorno que aparece no jogo (autoload/Preparo.gd).
+   No Godot 3 cada letra nova era desenhada na hora e a imagem de letras
+   inteira ia de novo para a placa de video: "STRIKE!", "PRA FORA!", o
+   placar e o resultado davam um tranco na TV Box na primeira vez. Agora
+   nao ha imagem de letra nova no meio da partida.
+2. LETRAS GRANDES DENTRO DO LIMITE DA PLACA. Na TV (1920x1080) o Godot
+   amplia as letras 1,25 vez; as maiores pediam imagens de letras de
+   2048 x 2048, pesadas demais para a Mali-450. Agora nenhuma passa de
+   1024 x 1024: a fonte e desenhada no limite e ampliada na tela - mesmo
+   tamanho e mesmo lugar.
+3. EMOJIS NITIDOS E SEM LOSANGO. Os emojis (boliche, trofeu, controle,
+   olhos, aperto de maos, visto) vem numa fontinha DENTRO do jogo, agora
+   com o desenho ja reduzido com filtro bom em varios tamanhos (antes o
+   desenho de 136 px era encolhido na hora, serrilhado). E acabou o
+   losango preto atras do emoji nos textos com contorno. Nao dependem das
+   fontes da TV Box: aparecem iguais em qualquer placa.
+4. MENOS TRABALHO PARA A PLACA EM CADA QUADRO. Textos com sombra e
+   contorno sao desenhados juntos (metade dos pedidos de desenho); a
+   abertura pinta o fundo pela cor de limpeza e o halo numa imagem so (em
+   vez de 5 camadas de tela cheia); o brilho da pista fica pronto no menu
+   e as particulas e o shader da abertura sao preparados antes de
+   aparecer.
+5. MODAL "1 OU 2 JOGADORES": aparece com a animacao de entrada (antes ela
+   rodava escondida) e, durante a contagem, nao recria mais os cartoes a
+   cada quadro (eram ~360 estilos com sombra e animacoes em 3 s, desde a
+   build 10, e os avisos de animacao orfa no log).
+6. DEMO IGUAL A DA PRO ULTRA 2.1.7: a demo nao recria mais os 10 pinos no
+   meio da animacao de entrada; START na demo volta ao menu com o modal
+   "1 ou 2 jogadores" aberto (um START = 1 jogador, dois = 2); SELECT na
+   demo abre a configuracao.
+7. APK SEM GRADLE. O que o Gradle fazia (tela cheia, TV Box) agora vem num
+   modelo Android pronto do jogo (android\modelo_android\extras.zip): a
+   atividade de TELA CHEIA (tools\android\TelaCheia: sem barra do sistema,
+   sem margem, tambem na area de overscan da TV, tela sempre acesa), o
+   jogo na tela inicial da TV (Leanback) e como aplicativo de inicio da
+   maquina (HOME), como na build 10. O gerador exporta uma COPIA com SO os
+   arquivos do jogo desta versao (tools\android\arquivos_do_jogo.txt):
+   arquivo que sobrou de uma versao antiga na pasta nao entra no APK e
+   nada e apagado; se faltar um arquivo da lista (zip extraido pela
+   metade), ele para e diz qual. No fim confere o APK: motor de 32 e 64
+   bits, tela cheia, TV Box, nenhuma permissao e a assinatura.
+8. LIMPEZA: sairam o plugin USB dos LEDs (desligado desde a build 6 - fica
+   no historico do git, build 10), o gerador antigo com Gradle, o
+   led_bridge.exe (do PC) e a cena separada da demo.
+9. TESTE LONGO (.teste/resistencia.gd): 30 min jogando sozinho, sem
+   parar - partidas de 1 e de 2 jogadores, demo, demo interrompida pelo
+   START, configuracao (fechando sozinha e pelo SELECT) e partida largada
+   (aviso de inatividade). Volta apos volta, memoria, objetos e texturas
+   voltam aos mesmos numeros (sem vazamento) e nenhum erro no log.
+   Numeros do teste: docs\TESTE_LONGO_BUILD11.txt.
+
+PARA NAO APAGAR NUNCA (TV BOX E TV)
+-----------------------------------
+O jogo mantem a tela acesa sozinho (refeito a cada 15 s e sempre que volta
+para a frente) e, se uma troca de tela falhar, em 3 s volta para a
+abertura. Na TV Box, em Configuracoes do Android, deixe "Protetor de
+tela/Daydream" e "Suspender/Dormir" em NUNCA; na TV, desligue o
+"Desligamento automatico/Eco".
+
+BOTOES (ZERO DELAY)
+-------------------
+Iguais aos da Pro Ultra: STR = START, Quadrado = jogada esquerda, X = meio
+esquerdo, Bolinha = strike (centro), Triangulo = meio direito, R1 e R2 =
+jogadas extremas, SELECT = CONFIGURACAO. No modo teclado: STR = 1/Espaco,
+Quadrado = A, X = S, Bolinha = D, Triangulo = F, R1 = G, SELECT = 5.
+Cada tecla tem a sua faixa de pinos (Z: 7 | X: 2, 4, 8 | C: 1, 5 | V: 3, 6,
+9 | B/R1/R2: 10); faixa vazia = "PRA FORA!".
+CONFIGURACAO: SO O SELECT. Na abertura, no menu ou na demo, o SELECT abre a
+tela de configurar os botoes; o SELECT de novo la dentro FECHA sem mudar
+nada (e sem ninguem apertar nada por 20 s, ela fecha sozinha). Se algum
+botao cair na funcao errada: abra com o SELECT e aperte na ordem pedida
+(STR, Quadrado, X, Bolinha, Triangulo, R1; SELECT e R2 sao opcionais). Fica
+gravado na TV Box. Na partida o SELECT nao faz nada. Nenhuma tecla fecha o
+jogo. Diagrama da placa: docs\ZERO_DELAY_BOLICHE.png.
+
+BORDA PRETA EM VOLTA DA IMAGEM
+------------------------------
+O jogo ocupa a tela inteira que o Android entrega (conferido a 1920x1080
+com a imagem girada). Para ver de onde vem uma borda: aperte SELECT e olhe
+a MOLDURA VERDE da tela de configuracao, que fica exatamente na borda da
+imagem do jogo, e a linha "TELA: JOGO ... ANDROID ...".
+- Preto POR FORA da moldura verde: a borda vem da TV Box. Na TV Box:
+  Configuracoes > Tela (Display) > Posicao da tela / Zoom da tela = 100%.
+- Se a TV ainda mostrar borda: formato de imagem da TV em "Ajustar a
+  tela" / "Just Scan" / "Pixel a pixel".
+
+TELA GIRADA
+-----------
+O jogo e em pe (monitor girado), como na Pro Ultra: dragon/tela/giro no
+project.godot (1 = topo do jogo na esquerda do HDMI). Se ficar de cabeca
+para baixo, gere com GERAR_APK_AGORA.bat -Giro -1 (a imagem de abertura do
+Android ja sai girada do mesmo jeito).
+
+PARA QUEM MEXE NO PROJETO
+-------------------------
+- Godot 3.6.3 (o "Standard", nao o Mono). Renderizador GLES2.
+- Arquivo do jogo novo ou apagado: python3 -I tools/android/lista_do_jogo.py
+  (refaz tools\android\arquivos_do_jogo.txt; o montar_apk.sh confere).
+- Build nova: version/code e version/name no export_presets.cfg.
+- APK no Linux: bash tools/android/montar_apk.sh (o mesmo caminho do .bat).
+- Mudou a atividade de tela cheia ou o manifesto:
+  bash tools/android/TelaCheia/construir.sh e
+  python3 -I tools/android/modelo_android.py <android_release.apk> <apktool.jar>.
+- Texto novo com emoji ou simbolo: acrescente em
+  tools/gerar_fontes_simbolos.py e rode; letra nova num tamanho novo:
+  acrescente na lista de autoload/Preparo.gd (o medidor .teste/medir.gd
+  com LETRAS=1 lista todas).
+- Guia da conversao Godot 4 -> 3 e da TV Box: docs\CONVERTER_PARA_TVBOX_S905L.md.
+
+HISTORICO (BUILDS ANTERIORES)
+-----------------------------
+Build 10: jogada so com os pinos montados (a bola do fim do round nao vira
+  a 1a jogada do round seguinte); tela sempre ligada; o jogo nunca fica sem
+  tela.
+Build 9: jogada firme - cada tecla tem a sua faixa; faixa vazia e erro.
+Build 8: so o SELECT abre a configuracao; nenhuma jogada cai nela.
+Build 7: R1 em qualquer placa; nenhuma tecla fecha o jogo; montagem dos
+  pinos fileira por fileira; START da demo pergunta 1 ou 2 jogadores.
+Build 6: pista sempre inteira na partida; nenhuma permissao (sem o plugin
+  USB).
+Build 5: fim do "o jogo parou" (era o plugin USB) e cortina que nunca trava.
+Build 4: medidor de tela cheia e janela reafirmada na tela inteira.
+Build 3: R2 da Zero Delay abria e fechava a configuracao (trocado na 8).
+Build 2: sons em WAV, pista carregada em pedacos, tela final montada depois.

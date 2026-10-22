@@ -39,10 +39,23 @@ var _faiscas: CPUParticles2D
 var _som: AudioStreamPlayer
 var _saindo := false
 var _menu_pedido := false
+## O halo roxo atrás do alvo (sprites/marca/halo_abertura.png).
+var _halo: Texture
+const HALO := "res://sprites/marca/halo_abertura.png"
+const RAIO_DO_HALO := 900.0
+const COR_FUNDO := Color(0.024, 0.031, 0.086)
+const COR_HALO := Color(0.36, 0.18, 0.78)
 
 
 func _ready() -> void:
 	Input.set_mouse_mode(Input.MOUSE_MODE_HIDDEN)
+	# O fundo escuro é a cor com que a placa de vídeo limpa a tela (de
+	# graça) e não um retângulo pintado por cima dela a cada quadro.
+	VisualServer.set_default_clear_color(COR_FUNDO)
+	# O halo roxo: os quatro círculos quase transparentes de antes numa
+	# imagem só (tools/gerar_halo_abertura.py) - a Mali-450 pintava a tela
+	# inteira quatro vezes a cada quadro para desenhá-los.
+	_halo = load(HALO)
 	# O menu começa a carregar depois do impacto do alvo: a parte mais
 	# animada da abertura roda sem ninguém disputando a TV Box.
 	get_tree().create_timer(INICIO_DA_CARGA_S).connect("timeout", self, "_pedir_menu")
@@ -72,6 +85,7 @@ func _ready() -> void:
 
 	_criar_letras()
 	_criar_faiscas()
+	_aquecer_desenhos(mat)
 
 	_som = AudioStreamPlayer.new()
 	if ResourceLoader.exists(SOM_IMPACTO):
@@ -127,14 +141,18 @@ func _criar_letras() -> void:
 		if fonte != null:
 			Compat.fonte(l, fonte)
 		Compat.tamanho(l, 120)
+		# Na TV de 1920 x 1080 a fonte sai no limite (102) e a letra é
+		# ampliada até o tamanho de 120 (ver Compat.tamanho_efetivo); o
+		# contorno e a sombra encolhem na mesma conta, para nada engrossar.
+		var k = Compat.fator_fonte(l)
 		l.add_color_override("font_color", Color(1.0, 0.82, 0.18))
 		l.add_color_override("font_outline_modulate", Color(0.35, 0.05, 0.08))
-		Compat.contorno(l, 22)
+		Compat.contorno(l, int(round(22.0 / k)))
 		l.add_color_override("font_color_shadow", Color(0, 0, 0, 0.6))
-		l.add_constant_override("shadow_offset_x", 6)
-		l.add_constant_override("shadow_offset_y", 8)
+		l.add_constant_override("shadow_offset_x", int(round(6.0 / k)))
+		l.add_constant_override("shadow_offset_y", int(round(8.0 / k)))
 		l.modulate.a = 0.0
-		l.rect_scale = Vector2(0.2, 0.2)
+		l.rect_scale = Vector2(0.2, 0.2) * k
 		Compat.z(l, 3)
 		add_child(l)
 		_letras.append(l)
@@ -165,6 +183,40 @@ func _criar_faiscas() -> void:
 	add_child(_faiscas)
 
 
+## O PRIMEIRO DESENHO DE CADA COISA NA MALI-450 PARA TUDO UM INSTANTE
+## (o "programa" de desenho é montado na hora). O brilho da placa só aparece
+## aos 0,2 s e as faíscas no impacto: aqui os dois são desenhados quase
+## invisíveis já no primeiro quadro - que é igual à imagem de inicialização
+## da TV Box, então ninguém vê a parada - e somem logo depois.
+func _aquecer_desenhos(mat: ShaderMaterial) -> void:
+	var placa := Sprite.new()
+	placa.texture = _placa.texture
+	placa.material = mat
+	placa.position = Vector2(4, 4)
+	placa.scale = Vector2(0.004, 0.004)
+	placa.modulate.a = 0.02
+	add_child(placa)
+	var faisca := CPUParticles2D.new()
+	faisca.position = Vector2(6, 6)
+	faisca.amount = 1
+	faisca.lifetime = 0.3
+	faisca.one_shot = true
+	faisca.explosiveness = 1.0
+	faisca.initial_velocity = 0.0
+	faisca.gravity = Vector2.ZERO
+	faisca.scale_amount = 1.0
+	faisca.color = Color(1, 1, 1, 0.02)
+	faisca.emitting = true
+	add_child(faisca)
+	get_tree().create_timer(0.5).connect("timeout", self, "_fim_do_aquecimento", [placa, faisca])
+
+
+func _fim_do_aquecimento(placa: Node, faisca: Node) -> void:
+	for n in [placa, faisca]:
+		if is_instance_valid(n):
+			n.queue_free()
+
+
 func _animar() -> void:
 	var tw = create_tween().set_parallel(true)
 	# 1. A placa sobe primeiro.
@@ -184,7 +236,7 @@ func _animar() -> void:
 		var l = _letras[i]
 		var atraso = 1.35 + i * 0.09
 		tw.tween_property(l, "modulate:a", 1.0, 0.12).set_delay(atraso)
-		tw.tween_property(l, Compat.prop(l, "scale"), Vector2.ONE, 0.35).set_delay(atraso)\
+		tw.tween_property(l, Compat.prop(l, "scale"), Vector2.ONE * Compat.fator_fonte(l), 0.35).set_delay(atraso)\
 			.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	# 4. Brilho passando pela placa.
 	tw.tween_property(_placa.material, "shader_param/brilho_x", _placa.texture.get_width() * 0.6, 0.7)\
@@ -192,6 +244,8 @@ func _animar() -> void:
 
 
 func _pedir_menu() -> void:
+	if GameConfig.precarregados.has(MENU):
+		return
 	_menu_pedido = Compat.pedir_carga(MENU) == OK
 
 
@@ -220,12 +274,10 @@ func _process(delta: float) -> void:
 ## O fundo: escuro com um halo roxo, raios de luz girando devagar e, no
 ## impacto, anéis que se espalham.
 func _draw() -> void:
-	var tela = Tela.TAMANHO
-	draw_rect(Rect2(Vector2.ZERO, tela), Color(0.024, 0.031, 0.086))
 	var aparece = clamp(_t / 0.6, 0.0, 1.0)
-	for r in [900.0, 700.0, 520.0, 380.0]:
-		var a = 0.07 * aparece * (1.0 - r / 1000.0)
-		draw_circle(CENTRO_ALVO, r, Color(0.36, 0.18, 0.78, a))
+	if _halo != null:
+		draw_texture_rect(_halo, Rect2(CENTRO_ALVO - Vector2(RAIO_DO_HALO, RAIO_DO_HALO), Vector2(RAIO_DO_HALO, RAIO_DO_HALO) * 2.0),
+				false, Color(COR_HALO.r, COR_HALO.g, COR_HALO.b, aparece))
 	var giro = _t * 0.25
 	for i in 12:
 		var ang = giro + TAU * i / 12.0
@@ -243,8 +295,9 @@ func _draw() -> void:
 
 
 func _ir_para_o_menu() -> void:
-	var recurso: PackedScene = null
-	if _menu_pedido:
+	# O menu já vem pronto da inicialização (autoload Preparo).
+	var recurso: PackedScene = GameConfig.precarregados.get(MENU) as PackedScene
+	if recurso == null and _menu_pedido:
 		var estado = Compat.estado_carga(MENU)
 		if estado == Compat.CARGA_EM_ANDAMENTO:
 			return   # o menu ainda carrega: a abertura continua viva

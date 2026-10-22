@@ -1,0 +1,46 @@
+TESTE LONGO DA BUILD 11 (Godot 3.6.3, a mesma copia que vira o APK)
+====================================================================
+
+Como foi feito: .teste/resistencia.gd, no PC (Linux, janela 1920x1080 com a
+tela girada como na TV Box, placa de video por software), sobre a copia do
+projeto que o montar_apk.sh exporta (so os arquivos de
+tools/android/arquivos_do_jogo.txt). O jogo joga sozinho, sem parar, um
+ciclo de missoes atras do outro:
+  partida de 1 jogador, partida de 2 jogadores, demo (esperando 80 s no
+  menu), configuracao fechando sozinha (20 s), partida largada (aviso de
+  inatividade), demo interrompida pelo START (volta ao menu com o modal),
+  configuracao fechada pelo SELECT, partida de 1 jogador.
+A cada volta ao menu (menu ja assentado) anota memoria, texturas, nos,
+nos orfaos, objetos e recursos.
+
+    DRAGON_GIRO=1 DURACAO=1800 RESISTENCIA=/pasta godot3 --path . -s res://.teste/resistencia.gd
+
+RESULTADO (21/10/2026, 1851 s = 31 min)
+---------------------------------------
+Missoes completas: 22 (partida de 1 jogador 5, de 2 jogadores 3, demo 3,
+demo interrompida pelo START 3, configuracao 5, partida largada 3).
+Erros e avisos no log: NENHUM.
+Quadros acima de 250 ms: NENHUM (o pior quadro do teste: 233 ms, com a
+placa de video por software do PC).
+
+volta     t (s)   memoria   texturas   nos   orfaos   objetos   recursos
+    0         7     78,8      55,0      48       0      1464        87
+    1       110     85,5      57,0      48       0      1543        87   1a partida
+    2       268     86,2      57,3      48       0      1557        87
+    3       367     86,2      57,3      48       0      1557        87
+    4       391     94,1      65,6      48       0      1600        87   1a configuracao
+    8       673     94,2      65,6      48       0      1600        87   fim do 1o ciclo
+   16      1290     94,2      65,6      48       0      1600        87   fim do 2o ciclo
+   22      1851     94,2      65,6      48       0      1600        87   fim do teste
+(memoria e texturas em MB)
+
+SEM VAZAMENTO: da volta 4 ate a 22 (24 minutos, mais de 2 ciclos inteiros)
+memoria, texturas, nos, objetos e recursos ficam nos MESMOS numeros; nos
+orfaos sempre 0. O que sobe, sobe uma vez so: a 1a partida carrega o que e
+dela, e a 1a abertura da configuracao desenha as letras daquela tela
+(+8 MB de imagens de letras, que ficam guardadas para as proximas vezes).
+
+O APK final (o mesmo projeto) tambem passou por: partida de 1 e de 2
+jogadores sem nenhum aviso; todos os 12 sons conferidos SEM repeticao;
+conferir_apk.py OK (assinatura v1+v2+v3 com a chave do projeto, nenhuma
+permissao, tela cheia, TV Box, 32 e 64 bits).

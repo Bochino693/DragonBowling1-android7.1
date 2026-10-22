@@ -8,13 +8,13 @@ aconteceu de verdade nesta placa; siga na ordem.
 | O quê | Como é | O que isso obriga |
 |---|---|---|
 | Processador | Amlogic S905L, 4× Cortex-A53 | 30 quadros fixos (`Engine.target_fps = 30`) |
-| Vídeo | **Mali-450, só OpenGL ES 2.0** | Godot 4 **não abre** (exige ES 3.0): usar **Godot 3.6.2 / GLES2** |
+| Vídeo | **Mali-450, só OpenGL ES 2.0** | Godot 4 **não abre** (exige ES 3.0): usar **Godot 3.6.3 / GLES2** |
 | Vídeo | Mali-450 sem textura no vértice | o Godot 3 deforma personagem 3D **no processador** (ver §4) |
 | Vídeo | conta do pixel em **16 bits** | nada de relógio grande dentro de shader (ver §4) |
 | Memória | **1 GB** para tudo | orçamento apertado (ver §3) |
 | Sistema | Android 7.1, launcher de fábrica (LongLauncher) | máquina dedicada: o jogo vira a tela inicial (ver §5) |
 
-## 2. Godot 4 → Godot 3.6.2
+## 2. Godot 4 → Godot 3.6 (3.6.3)
 
 - Projeto em `GLES2`, `fallback_to_gles2=true`, `force_vertex_shading.mobile=false`.
 - Uma camada de compatibilidade (`scripts/compat.gd`) concentra as trocas de
@@ -128,16 +128,34 @@ toca). Torcida e voz já são médios e aparecem.
 
 ## 7. Gerar o APK
 
-`GERAR_APK_AGORA.bat` → `tools/gerar_apk/GERAR_APK_COMPLETO.ps1`: baixa o
-Godot 3.6.2 e os modelos, confere a pasta contra `arquivos_build.txt`
-(guarda sobras de versões antigas), escreve a Activity de tela cheia, exporta
-e confere o APK. Toda build nova: subir o carimbo em `versao.gd`,
-`export_presets.cfg`, `$Build` do `.ps1` e `SUPERBOXING_BUILD` dos `.bat`, e
-regenerar `arquivos_build.txt` (`git ls-files`).
+**Sem Gradle** (Dragon Bowling, build 11). O Godot 3 exporta pelo modelo
+pronto (`android_release.apk` dos modelos oficiais 3.6.3); o que o Gradle
+fazia antes vem num **modelo Android do jogo**: o oficial + um
+`android/modelo_android/extras.zip` (manifesto e recursos remontados, mais
+um `classes2.dex`), juntados na hora por `tools/android/remendo_apk.jar`.
+
+- Activity de tela cheia (overscan, imersivo, sem margem das barras):
+  `tools/android/TelaCheia/` (Java 8 compilado contra as classes do Godot
+  3.6.3, `dx` → `classes2.dex`). O manifesto do modelo aponta para ela no
+  lugar da `com.godot.game.GodotApp` (que mora no `classes.dex` e não pode
+  ser trocada). Recursos do modelo pelo NOME no pacote `com.godot.game`: o
+  Godot muda o pacote do APK, não o dos recursos.
+- `tools/android/modelo_android.py` (apktool, só no Linux) refaz o
+  `extras.zip`: atividade, tema de tela cheia, `LEANBACK_LAUNCHER` + `HOME`,
+  touchscreen/leanback opcionais.
+- `GERAR_APK_AGORA.bat` → `tools/android/GERAR_APK.ps1` (Windows) e
+  `tools/android/montar_apk.sh` (Linux): copiam **só** os arquivos de
+  `tools/android/arquivos_do_jogo.txt` (sobra de versão antiga não entra;
+  arquivo faltando para a geração), exportam com `custom_build=false` e
+  `signed=false` (o Godot exige um SDK com `adb` e `apksigner` mesmo assim:
+  o do Linux é de mentira), assinam com a chave do projeto
+  (`tools/android/dragonbowling.keystore`, uber-apk-signer) e conferem.
+- Toda build nova: `version/code` e `version/name` no `export_presets.cfg`;
+  arquivo do jogo novo ou apagado: `python3 -I tools/android/lista_do_jogo.py`.
 
 ## 8. Testar antes de mandar para a placa
 
-1. Sintaxe de todos os scripts (Godot 3.6.2 sem janela).
+1. Sintaxe de todos os scripts (Godot 3.6.3 sem janela).
 2. Abertura inteira pelo carregador (até "PRONTO") e uma partida inteira.
 3. **As mesmas duas com `force_software_skinning=true`** (várias vezes).
 4. Memória (§3) comparada com a última build que rodou na placa.
@@ -168,9 +186,10 @@ pasta `tools`) e servem para os próximos jogos:
   carga "em segundo plano" (uma por quadro), randi_range etc.
 - `tools/importacoes_godot3.py` — .import da S905L (ETC1 sem alfa, sem
   mipmaps, som sem laço).
-- `tools/dragon_usb_plugin_g3/montar_aar.py` — o plugin Android do Godot 4
-  reaproveitado no Godot 3 (só muda o registro: `plugin.v1` + `.gdap`) e
-  com a atividade que faz o Android lembrar a permissão USB.
+- O plugin USB dos LEDs (Godot 4 reaproveitado no 3: só muda o registro,
+  `plugin.v1` + `.gdap`) saiu do projeto na build 11 - o jogo não o usa
+  desde a build 6. Está no histórico do git (build 10,
+  `tools/dragon_usb_plugin_g3`).
 
 Armadilhas que só aparecem RODANDO (a sintaxe passa):
 - Control não tem `position/scale/size/z_index` no Godot 3; variável sem

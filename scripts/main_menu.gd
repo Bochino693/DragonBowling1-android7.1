@@ -29,7 +29,7 @@ const PRECARGA := [
 ]
 const SHADER_DA_PISTA := preload("res://shaders/brilho_pista.shader")
 var _precarga_pendente: Array = []
-const CENA_DEMO = "res://scene/demo.tscn"
+const SCRIPT_DEMO = "res://scripts/demo.gd"
 const TEMPO_ESPERA = 2.0
 const TEMPO_ATE_DEMO = 80.0
 const CAMINHO_LOGO = "res://sprites/logoofi.png"
@@ -105,6 +105,9 @@ func _ready() -> void:
 	_forcar_ocultar_cursor()
 	_iniciar_precarga()
 	_preparar_modal_escondido()
+	var mascara = GameConfig.precarregados.get("res://sprites/pista_mascara.png")
+	if mascara is Texture:
+		_aquecer_shader_da_pista(mascara)
 	
 	_configurar_led()
 	call_deferred("_enviar_led", "MENU")
@@ -128,6 +131,10 @@ func _ready() -> void:
 	_iniciar_animacao_logo()
 	_iniciar_animacao_idle()
 	_resetar_timer_demo()
+	# Veio da demo pelo START: já abre a escolha de 1 ou 2 jogadores.
+	if ArcadeControls.abrir_selecao_de_jogadores:
+		ArcadeControls.abrir_selecao_de_jogadores = false
+		_registrar_pulso_start()
 
 	var viewport: Viewport = get_viewport()
 	if viewport != null and not viewport.is_connected("size_changed", self, "_on_viewport_size_changed"):
@@ -166,99 +173,44 @@ func _aquecer_shader_da_pista(mascara: Texture) -> void:
 	add_child(ponto)
 
 
-## O MODAL DE JOGADORES E AS LETRAS DA PARTIDA FICAM PRONTOS NO MENU.
+## O MODAL DE JOGADORES FICA PRONTO NA MONTAGEM DO MENU.
 ##
-## Montar o modal na hora do START (40 e tantos painéis) e desenhar pela
-## primeira vez as letras grandes com contorno ("1 PLAYER", "STRIKE!",
-## "ROUND 2"...) era o que travava a TV Box na hora H. O modal é montado
-## escondido logo que o menu assenta, e cada letra de cada tamanho é
-## desenhada uma vez, quase invisível, UMA POR QUADRO, enquanto o menu está
-## parado — sem nenhum quadro pesado. O cache fica na fonte (GameConfig
-## guarda as fontes durante o jogo todo).
-const ESPERA_PARA_PREPARAR := 0.8
-const LETRAS_DA_PARTIDA := [
-	# [tamanho, contorno, texto] da fonte arcade — as medidas de game.gd
-	[108, 14, "STRIKE!"],
-	[88, 14, "ACERTO!SPAREPRAFO"],
-	[78, 14, "PLAYER•ROUND0123456789"],
-	[52, 14, "RESULTADOFINALVENCEU!"],
-	[48, 14, "RESULTADOFINALVENCEU!EMPATPLYR12"],
-	[46, 14, "NOVORECORDEVENCEU!EMPAT12"],
-]
-
+## Montar o modal na hora do START (40 e tantos painéis) travava a TV Box na
+## hora H. Ele é montado escondido junto com o menu - ainda atrás da
+## cortina - e só aparece no START. As letras dele (e as da partida) já
+## foram desenhadas uma vez na inicialização (autoload Preparo).
 func _preparar_modal_escondido() -> void:
-	var _g3_estado = null
-	yield(get_tree().create_timer(ESPERA_PARA_PREPARAR), "timeout")
-	if not is_inside_tree() or not pode_iniciar or seletor_jogadores_ativo or layer_selecao_jogadores != null:
+	if seletor_jogadores_ativo or layer_selecao_jogadores != null:
 		return
 	_criar_overlay_selecao_jogadores()
 	layer_selecao_jogadores.visible = false
-	# As letras dos dois estados do modal (1 e 2 jogadores).
-	var combos: Array = []
-	for pulsos in [1, 2]:
-		pulsos_start = pulsos
-		timer_selecao_jogadores = tempo_selecao_jogadores
-		_atualizar_texto_selecao_jogadores()
-		combos.append_array(_combos_de_letras(layer_selecao_jogadores))
-	pulsos_start = 0
-	var arcade = load("res://fonts/arcade_impact.ttf") if ResourceLoader.exists("res://fonts/arcade_impact.ttf") else null
-	if arcade != null:
-		for item in LETRAS_DA_PARTIDA:
-			combos.append([arcade, item[0], item[1], item[2]])
-	_g3_estado = _aquecer_letras(combos)
-	if _g3_estado is GDScriptFunctionState:
-		_g3_estado = yield(_g3_estado, "completed")
-
-
-func _combos_de_letras(raiz: Node) -> Array:
-	var r: Array = []
-	for l in Compat.filhos_do_tipo(raiz, "Label"):
-		var lbl = l as Label
-		var e = Compat.estilo_de(lbl)
-		r.append([e[0], e[1], e[2], lbl.text])
-	return r
-
-
-func _aquecer_letras(combos: Array) -> void:
-	var camada := CanvasLayer.new()
-	camada.layer = -50
-	add_child(camada)
-	var sonda := Label.new()
-	sonda.rect_position = Vector2(20, 20)
-	sonda.modulate.a = 0.01
-	sonda.add_color_override("font_outline_modulate", Color(0.01, 0.01, 0.02))
-	sonda.add_color_override("font_color_shadow", Color(0, 0, 0, 0.70))
-	sonda.add_constant_override("shadow_offset_x", 5)
-	sonda.add_constant_override("shadow_offset_y", 5)
-	camada.add_child(sonda)
-	var feitos = {}
-	for c in combos:
-		var fonte = c[0]
-		if fonte == null:
-			continue
-		Compat.fonte(sonda, fonte)
-		Compat.tamanho(sonda, int(c[1]))
-		Compat.contorno(sonda, int(c[2]))
-		for ch in String(c[3]):
-			if ch == " ":
-				continue
-			var chave = "%d|%d|%d|%s" % [fonte.get_instance_id(), int(c[1]), int(c[2]), ch]
-			if feitos.has(chave):
-				continue
-			feitos[chave] = true
-			sonda.text = ch
-			yield(get_tree(), "idle_frame")
-			if not is_inside_tree() or not pode_iniciar:
-				if is_instance_valid(camada):
-					camada.queue_free()
-				return
-	camada.queue_free()
 
 
 func _mostrar_overlay_selecao() -> void:
 	if layer_selecao_jogadores == null or not is_instance_valid(layer_selecao_jogadores):
 		_criar_overlay_selecao_jogadores()
 	layer_selecao_jogadores.visible = true
+	_animar_entrada_do_modal()
+
+
+## A entrada do modal (cresce de 94% e acende) na hora em que ele aparece -
+## o modal é montado antes, escondido, e a animação rodava sem ninguém ver.
+var glow_modal: Panel = null
+
+func _animar_entrada_do_modal() -> void:
+	if painel_selecao_jogadores == null or glow_modal == null:
+		return
+	painel_selecao_jogadores.rect_scale = Vector2(0.94, 0.94)
+	painel_selecao_jogadores.modulate.a = 0.0
+	glow_modal.rect_scale = Vector2(0.94, 0.94)
+	glow_modal.modulate.a = 0.0
+	# (presa ao painel: some junto com ele, sem aviso de animação órfã)
+	var tw = painel_selecao_jogadores.create_tween()
+	tw.set_parallel(true)
+	tw.tween_property(painel_selecao_jogadores, "rect_scale", Vector2.ONE, 0.13).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	tw.tween_property(painel_selecao_jogadores, "modulate:a", 1.0, 0.11).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	tw.tween_property(glow_modal, "rect_scale", Vector2.ONE, 0.13).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	tw.tween_property(glow_modal, "modulate:a", 1.0, 0.11).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 
 
 func _colher_precarga() -> void:
@@ -322,7 +274,7 @@ func _registrar_pulso_start() -> void:
 		_atualizar_texto_selecao_jogadores()
 
 		if card_player_2 != null:
-			var tw = create_tween()
+			var tw = card_player_2.create_tween()
 			tw.tween_property(card_player_2, "rect_scale", Vector2(1.22, 1.22), 0.16)\
 				.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 			tw.tween_property(card_player_2, "rect_scale", Vector2(1.08, 1.08), 0.18)\
@@ -338,6 +290,9 @@ func _registrar_pulso_start() -> void:
 func _criar_overlay_selecao_jogadores() -> void:
 	if layer_selecao_jogadores != null:
 		layer_selecao_jogadores.queue_free()
+	# cartões e textos novos: o estado deles é aplicado de novo
+	_estado_dos_cards = 0
+	_estado_do_texto = 0
 
 	layer_selecao_jogadores = CanvasLayer.new()
 	layer_selecao_jogadores.layer = 1000
@@ -368,7 +323,7 @@ func _criar_overlay_selecao_jogadores() -> void:
 	faixa.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	layer_selecao_jogadores.add_child(faixa)
 
-	var glow_modal := Panel.new()
+	glow_modal = Panel.new()
 	glow_modal.rect_size = Vector2(900, 760)
 	glow_modal.rect_position = Vector2(
 		(tela.x - glow_modal.rect_size.x) * 0.5,
@@ -660,17 +615,22 @@ func _criar_overlay_selecao_jogadores() -> void:
 	_aplicar_fonte_modal(lbl_2p_sub, 18, Color.white, 5)
 	_aplicar_fonte_modal(txt_timer_selecao, 22, Color(0.80, 1.0, 0.85), 5)
 	_aplicar_fonte_modal(txt_instrucao_selecao, 18, Color.white * Color(1, 1, 1, 0.58), 4)
-
-	var tw = create_tween()
-	tw.set_parallel(true)
-	tw.tween_property(painel_selecao_jogadores, "rect_scale", Vector2.ONE, 0.13).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
-	tw.tween_property(painel_selecao_jogadores, "modulate:a", 1.0, 0.11).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
-	tw.tween_property(glow_modal, "rect_scale", Vector2.ONE, 0.13).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
-	tw.tween_property(glow_modal, "modulate:a", 1.0, 0.11).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	# (a animação de entrada roda quando o modal aparece: _mostrar_overlay_selecao)
 
 
+
+## O estado dos cartões (1 = esperando o 2o START, 2 = dois jogadores) só é
+## aplicado quando MUDA: a contagem do modal chama isto a cada quadro, e
+## cada chamada criava dois estilos com sombra e duas animações novas (umas
+## 360 em 3 s, brigando pela mesma escala, e avisos de animação órfã quando
+## o modal fechava).
+var _estado_dos_cards := 0
 
 func _aplicar_estado_cards_players() -> void:
+	var estado = 2 if pulsos_start >= 2 else 1
+	if estado == _estado_dos_cards:
+		return
+	_estado_dos_cards = estado
 	if card_player_1 != null:
 		var s1 := StyleBoxFlat.new()
 		s1.bg_color = Color(0.02, 0.22, 0.62, 0.96)
@@ -687,7 +647,7 @@ func _aplicar_estado_cards_players() -> void:
 		s1.shadow_size = 34
 		card_player_1.add_stylebox_override("panel", s1)
 
-		var tw1 = create_tween()
+		var tw1 = card_player_1.create_tween()
 		tw1.tween_property(card_player_1, "rect_scale", Vector2(1.04, 1.04), 0.18)\
 			.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 
@@ -708,7 +668,7 @@ func _aplicar_estado_cards_players() -> void:
 				lbl_player_2.text = "PLAYER 2 ATIVO"
 				_aplicar_fonte_modal(lbl_player_2, 18, Color(1.0, 0.72, 0.68), 5)
 
-			var tw2 = create_tween()
+			var tw2 = card_player_2.create_tween()
 			tw2.tween_property(card_player_2, "rect_scale", Vector2(1.08, 1.08), 0.22)\
 				.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 		else:
@@ -721,7 +681,7 @@ func _aplicar_estado_cards_players() -> void:
 				lbl_player_2.text = "AGUARDANDO 2º START"
 				_aplicar_fonte_modal(lbl_player_2, 16, Color(1, 1, 1, 0.48), 4)
 
-			var tw3 = create_tween()
+			var tw3 = card_player_2.create_tween()
 			tw3.tween_property(card_player_2, "rect_scale", Vector2(0.96, 0.96), 0.22)\
 				.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 
@@ -737,6 +697,11 @@ func _aplicar_estado_cards_players() -> void:
 
 
 
+## Como os cartões: textos e cores do modal só mudam quando o estado muda
+## (trocar a cor de um texto refaz as medidas dele; a contagem roda a cada
+## quadro). A cada quadro, só a contagem e a barra.
+var _estado_do_texto := 0
+
 func _atualizar_texto_selecao_jogadores() -> void:
 	if txt_modo_selecao == null:
 		return
@@ -745,7 +710,13 @@ func _atualizar_texto_selecao_jogadores() -> void:
 
 	_aplicar_estado_cards_players()
 
-	if pulsos_start >= 2:
+	var estado = 2 if pulsos_start >= 2 else 1
+	if estado == 1 and txt_timer_selecao != null:
+		txt_timer_selecao.text = "Aguardando 2º START para 2 Players...  %d" % segundos
+	if estado == _estado_do_texto:
+		pass
+	elif pulsos_start >= 2:
+		_estado_do_texto = estado
 		txt_modo_selecao.text = "2 PLAYERS"
 		txt_modo_selecao.add_color_override("font_color", Color(1.0, 0.16, 0.12))
 
@@ -760,11 +731,11 @@ func _atualizar_texto_selecao_jogadores() -> void:
 			barra_timer_selecao.color = Color(1.0, 0.12, 0.10, 1.0)
 
 	else:
+		_estado_do_texto = estado
 		txt_modo_selecao.text = "1 PLAYER"
 		txt_modo_selecao.add_color_override("font_color", Color(0.10, 0.75, 1.0))
 
 		if txt_timer_selecao != null:
-			txt_timer_selecao.text = "Aguardando 2º START para 2 Players...  %d" % segundos
 			txt_timer_selecao.add_color_override("font_color", Color(0.60, 0.92, 1.0))
 
 		if txt_instrucao_selecao != null:
@@ -802,6 +773,7 @@ func _confirmar_quantidade_jogadores() -> void:
 
 	layer_selecao_jogadores = null
 	painel_selecao_jogadores = null
+	glow_modal = null
 	txt_titulo_selecao = null
 	txt_modo_selecao = null
 	txt_instrucao_selecao = null
@@ -821,12 +793,8 @@ func _ir_para_teste() -> void:
 
 	_parar_musica_menu()
 
-	var erro: int = get_tree().change_scene(CENA_TESTE)
-
-	if erro != OK:
-		push_error("Erro ao carregar cena de teste: " + CENA_TESTE)
-		pode_iniciar = true
-		_tocar_musica_menu()
+	# Pela porta única (adiada, atrás da cortina), e não no meio do _input.
+	ArcadeControls.ir_para_configuracao()
 
 
 func _input(event: InputEvent) -> void:
@@ -882,7 +850,7 @@ func _mostrar_aviso_sem_funcao(event: InputEvent) -> void:
 		_aplicar_fonte_modal(_aviso_sem_funcao, 30, Color(1.0, 0.86, 0.2), 8)
 		camada.add_child(_aviso_sem_funcao)
 	var codigo = ArcadeControls.codigo_do_evento(event)
-	_aviso_sem_funcao.text = "%s SEM FUNÇÃO\nSEGURE QUALQUER BOTÃO DA PLACA 10 s PARA CONFIGURAR" % ArcadeControls.texto_do_codigo(codigo)
+	_aviso_sem_funcao.text = "%s SEM FUNÇÃO\nPARA CONFIGURAR A PLACA, APERTE SELECT" % ArcadeControls.texto_do_codigo(codigo)
 	_aviso_sem_funcao.modulate.a = 1.0
 	if _tween_aviso != null:
 		_tween_aviso.kill()
@@ -1380,16 +1348,27 @@ func _iniciar_demo() -> void:
 		start_button.disabled = true
 		start_button.text = "DEMO MODE"
 
-	_parar_musica_menu()
-
-	_g3_estado = Cortina.fechar(get_tree())
-	if _g3_estado is GDScriptFunctionState:
-		_g3_estado = yield(_g3_estado, "completed")
-	var erro: int = get_tree().change_scene(CENA_DEMO)
-	Cortina.abrir(get_tree())
-
-	if erro != OK:
-		push_error("Erro ao carregar cena de demo: " + CENA_DEMO)
+	# A DEMO ENTRA PELO MESMO CAMINHO DO START (o que funciona na TV Box):
+	# a pista que já está na memória é montada aqui, dentro de um nó com o
+	# piloto da demo (demo.gd), e entra no lugar do menu por baixo da
+	# cortina. Nada de ler cena do disco nem de change_scene na hora da
+	# troca - e a pista não é montada duas vezes.
+	while CENA_DO_JOGO in _precarga_pendente \
+			and Compat.estado_carga(CENA_DO_JOGO) == Compat.CARGA_EM_ANDAMENTO:
+		yield(get_tree(), "idle_frame")
+	var recurso: PackedScene = GameConfig.precarregados.get(CENA_DO_JOGO) as PackedScene
+	if recurso == null:
+		if CENA_DO_JOGO in _precarga_pendente:
+			recurso = Compat.pegar_carga(CENA_DO_JOGO) as PackedScene
+			_precarga_pendente.erase(CENA_DO_JOGO)
+			GameConfig.precarregados[CENA_DO_JOGO] = recurso
+		else:
+			recurso = load(CENA_DO_JOGO) as PackedScene
+	var piloto = GameConfig.precarregados.get(SCRIPT_DEMO)
+	if piloto == null:
+		piloto = load(SCRIPT_DEMO)
+	if recurso == null or not (piloto is Script):
+		push_error("Erro ao montar a demo.")
 		demo_ativa_transicao = false
 		pode_iniciar = true
 
@@ -1397,8 +1376,27 @@ func _iniciar_demo() -> void:
 			start_button.disabled = false
 			start_button.text = "START"
 
-		_tocar_musica_menu()
 		_resetar_timer_demo()
+		return
+
+	_parar_musica_menu()
+
+	# A árvore é guardada ANTES da troca: com o menu fora dela, get_tree()
+	# volta vazio (a cortina ficava fechada e a demo rodava com a tela preta).
+	var arvore = get_tree()
+	_g3_estado = Cortina.fechar(arvore)
+	if _g3_estado is GDScriptFunctionState:
+		_g3_estado = yield(_g3_estado, "completed")
+	var demo = Node2D.new()
+	demo.name = "Demo"
+	demo.set_script(piloto)
+	var pista: Node = recurso.instance()
+	pista.name = "Game"
+	demo.add_child(pista)
+	arvore.root.add_child(demo)
+	arvore.current_scene = demo
+	queue_free()
+	Cortina.abrir(arvore)
 
 
 
