@@ -818,13 +818,13 @@ function Copiar-Projeto {
     if (-not (Test-Path -LiteralPath (Join-Path $script:Copia "project.godot"))) { throw "a copia do projeto ficou incompleta." }
     # o que esta na pasta e nao e desta versao (so avisa; nada e apagado)
     $daLista = New-Object 'Collections.Generic.HashSet[string]' ([StringComparer]::OrdinalIgnoreCase)
-    foreach ($n in $nomes) { [void]$daLista.Add($n -replace '/', '\') }
+    foreach ($n in $nomes) { [void]$daLista.Add($n) }
     $pastasDoJogo = @($nomes | Where-Object { $_.Contains('/') } | ForEach-Object { $_.Split('/')[0] } | Select-Object -Unique)
     $sobras = 0
     foreach ($p in $pastasDoJogo) {
         $raiz = Join-Path $Projeto $p
         foreach ($a in @(Get-ChildItem -LiteralPath $raiz -Recurse -File -Force -ErrorAction SilentlyContinue)) {
-            $rel = $a.FullName.Substring($Projeto.Length + 1)
+            $rel = $a.FullName.Substring($Projeto.Length + 1).Replace('\', '/')
             if (-not $daLista.Contains($rel) -and $a.Name -ne '.gdignore') { $sobras++ }
         }
     }
