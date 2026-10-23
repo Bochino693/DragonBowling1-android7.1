@@ -7,6 +7,7 @@
 #   python -I conferir_apk.py <apk> [--certificado <sha256>]
 # Sai com código 1 se algo falhar.
 import hashlib
+import os
 import sys
 
 from loguru import logger
@@ -75,6 +76,11 @@ for abi in ABIS:
 checar('assets/project.binary' in arquivos, 'projeto exportado (assets/project.binary)')
 importados = [f for f in arquivos if f.startswith('assets/.import/')]
 checar(len(importados) >= 30, 'arquivos do jogo importados no APK: %d' % len(importados))
+# e todos os sons da lista do jogo (a conta acima não pega uns poucos a menos)
+lista = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'arquivos_do_jogo.txt')
+sons_da_lista = [n for n in open(lista, encoding='utf-8').read().splitlines() if n.startswith('songs/') and n.endswith(('.wav', '.ogg'))]
+sons = [f for f in importados if f.endswith(('.sample', '.oggstr'))]
+checar(len(sons) >= len(sons_da_lista), 'sons do jogo no APK: %d de %d' % (len(sons), len(sons_da_lista)))
 for f in ('assets/autoload/Preparo.gdc', 'assets/scripts/game.gdc', 'assets/fonts/emoji_do_jogo.ttf'):
     checar(f in arquivos, f)
 checar(not any(f.startswith(('assets/tools/', 'assets/docs/', 'assets/addons/', 'assets/arduino/', 'assets/.teste/'))
