@@ -44,8 +44,13 @@ var lbl_creditos: Label = null
 
 var seletor_jogadores_ativo: bool = false
 var pulsos_start: int = 0
-var tempo_selecao_jogadores: float = 3.0
+## 9 s para ler o modal e decidir: sem o 2o START, a partida começa com
+## 1 jogador quando a barra esvazia; com ele, começa na hora com 2.
+var tempo_selecao_jogadores: float = 9.0
 var timer_selecao_jogadores: float = 0.0
+## o 2o START: a barra sai de onde estava e esvazia até a partida começar
+const TEMPO_CONFIRMA_2P := 0.35
+var _barra_no_2o_start: float = 1.0
 
 var layer_selecao_jogadores: CanvasLayer = null
 var painel_selecao_jogadores: Panel = null
@@ -268,7 +273,8 @@ func _registrar_pulso_start() -> void:
 
 	if pulsos_start < 2:
 		pulsos_start = 2
-		timer_selecao_jogadores = 0.35
+		_barra_no_2o_start = clamp(timer_selecao_jogadores / tempo_selecao_jogadores, 0.0, 1.0)
+		timer_selecao_jogadores = TEMPO_CONFIRMA_2P
 		_enviar_led("RED")
 		_tocar_som_coin()
 		_atualizar_texto_selecao_jogadores()
@@ -280,7 +286,7 @@ func _registrar_pulso_start() -> void:
 			tw.tween_property(card_player_2, "rect_scale", Vector2(1.08, 1.08), 0.18)\
 				.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
-		yield(get_tree().create_timer(0.35), "timeout")
+		yield(get_tree().create_timer(TEMPO_CONFIRMA_2P), "timeout")
 
 		if seletor_jogadores_ativo and pulsos_start >= 2:
 			_confirmar_quantidade_jogadores()
@@ -746,6 +752,8 @@ func _atualizar_texto_selecao_jogadores() -> void:
 
 	if barra_timer_selecao != null:
 		var pct: float = clamp(timer_selecao_jogadores / tempo_selecao_jogadores, 0.0, 1.0)
+		if pulsos_start >= 2:
+			pct = _barra_no_2o_start * clamp(timer_selecao_jogadores / TEMPO_CONFIRMA_2P, 0.0, 1.0)
 		barra_timer_selecao.rect_size.x = 660.0 * pct
 
 
