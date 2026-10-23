@@ -806,9 +806,11 @@ function Copiar-Projeto {
             (($faltam | Select-Object -First 8) -join "`n      ") + "`n    Extraia o ZIP inteiro de novo.")
     }
     $script:Copia = Pasta (Join-Path $script:Trabalho "projeto")
-    # limpa a copia anterior, menos o cache de importacao (.import): assim
-    # a 2a vez e bem mais rapida
-    Get-ChildItem -LiteralPath $script:Copia -Force | Where-Object { $_.Name -ne '.import' } | Remove-Item -Recurse -Force
+    # limpa a copia anterior INTEIRA, inclusive a importacao (.import). Os
+    # .import da lista vem sem o destino; com a importacao velha na pasta o
+    # Godot dava os sons por importados e o APK saia SEM OS SONS na 2a vez
+    # (as imagens ele reimporta sempre: o cache nao poupava quase nada)
+    Get-ChildItem -LiteralPath $script:Copia -Force | Remove-Item -Recurse -Force
     foreach ($n in $nomes) {
         $rel = $n -replace '/', '\'
         $destino = Join-Path $script:Copia $rel
@@ -987,6 +989,11 @@ function Conferir-Apk([string]$Apk) {
         }
         $dados = @($nomes.Keys | Where-Object { $_ -like "assets/.import/*" }).Count
         if ($dados -lt 30) { throw "o APK ficou sem os arquivos do jogo (assets/.import: $dados)." }
+        # e todos os sons da lista do jogo (a conta acima nao pega uns poucos a menos)
+        $lista = Join-Path $Projeto "tools\android\arquivos_do_jogo.txt"
+        $sonsDaLista = @([IO.File]::ReadAllLines($lista) | Where-Object { $_.Trim() -match '^songs/.+\.(wav|ogg)$' }).Count
+        $sons = @($nomes.Keys | Where-Object { $_ -match '^assets/\.import/.+\.(sample|oggstr)$' }).Count
+        if ($sons -lt $sonsDaLista) { throw "o APK ficou sem os sons do jogo ($sons de $sonsDaLista)." }
         # a tela cheia (a atividade do Dragon Bowling) e nenhum plugin antigo
         $dex2 = Texto-Binario (Bytes-Do-Zip $z "classes2.dex")
         if (-not $dex2.Contains("Lcom/lazersport/dragonbowling/TelaCheia;")) { throw "o APK ficou sem a atividade de tela cheia (classes2.dex)." }
@@ -1070,8 +1077,8 @@ function Principal {
     Preparar-Copia
     Preparar-Chave
     Escrever-ConfigEditor
-    Info "Exportando com o Godot 3.6.3. Na 1a vez ele ainda importa as imagens"
-    Info "e os sons (alguns minutos, as vezes sem escrever nada): e normal."
+    Info "Exportando com o Godot 3.6.3. Antes ele importa as imagens e os sons"
+    Info "(as vezes alguns minutos sem escrever nada): e normal."
     $semAssinatura = Exportar
     Ok ("APK do Godot: {0:N1} MB" -f ((Get-Item -LiteralPath $semAssinatura).Length / 1MB))
 
