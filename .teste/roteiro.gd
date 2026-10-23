@@ -1,12 +1,13 @@
 extends SceneTree
-## Uso: FOTOS=/pasta FIM=110 godot --path . -s res://.teste/roteiro.gd (fotos a cada 0,5 s).
-## Roteiro fixo: mesmas teclas nos mesmos segundos que o do Godot 4.
+## Uso: FOTOS=/pasta FIM=116 godot --path . -s res://.teste/roteiro.gd (fotos a cada 0,5 s).
+## Roteiro fixo: as mesmas teclas do Godot 4, com as jogadas 6 s depois
+## (o modal "1 ou 2 jogadores" espera 9 s pelo 2o START, não 3).
 const TECLAS = {"start": KEY_1, "z": KEY_A, "x": KEY_S, "c": KEY_D, "v": KEY_F, "b": KEY_G}
-var ROTEIRO = [[7.0, "start"], [16.0, "c"], [24.0, "x"], [32.0, "v"], [40.0, "z"], [48.0, "c"], [56.0, "b"], [64.0, "c"], [72.0, "x"], [80.0, "c"]]
+var ROTEIRO = [[7.0, "start"], [22.0, "c"], [30.0, "x"], [38.0, "v"], [46.0, "z"], [54.0, "c"], [62.0, "b"], [70.0, "c"], [78.0, "x"], [86.0, "c"]]
 var t0 = 0
 var proxima_foto = 0.5
 var soltar = []
-var fim = 110.0
+var fim = 116.0
 var pasta = OS.get_environment("FOTOS") if OS.has_environment("FOTOS") else "user://roteiro"
 func _init():
 	if OS.has_environment("FIM"):

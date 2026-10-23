@@ -9,16 +9,16 @@ extends SceneTree
 ## pixels a mais para ela pintar. No fim: resumo por tela, as camadas que
 ## mais cobrem a tela e as imagens desenhadas bem menores do que são
 ## (sem mipmap, a Mali lê a imagem inteira para encolher).
-## Variáveis: FIM (s, padrão 110), ROTEIRO=demo (espera a demo, sem teclas),
+## Variáveis: FIM (s, padrão 116), ROTEIRO=demo (espera a demo, sem teclas),
 ## FOTOS=1 (foto a cada 2 s em MEDIR).
 const TECLAS = {"start": KEY_1, "z": KEY_A, "x": KEY_S, "c": KEY_D, "v": KEY_F, "b": KEY_G, "sel": KEY_5, "q": KEY_Q, "w": KEY_W}
-var ROTEIRO = [[7.0, "start"], [16.0, "c"], [24.0, "x"], [32.0, "v"], [40.0, "z"], [48.0, "c"], [56.0, "b"], [64.0, "c"], [72.0, "x"], [80.0, "c"]]
+var ROTEIRO = [[7.0, "start"], [22.0, "c"], [30.0, "x"], [38.0, "v"], [46.0, "z"], [54.0, "c"], [62.0, "b"], [70.0, "c"], [78.0, "x"], [86.0, "c"]]
 const AREA_JOGO = 1024.0 * 1536.0
 
 var t0 = 0
 var ultimo_us = 0
 var soltar = []
-var fim = 110.0
+var fim = 116.0
 var pasta = OS.get_environment("MEDIR") if OS.has_environment("MEDIR") else "user://medir"
 var fotos = OS.has_environment("FOTOS")
 ## SEM_AREA=1: não soma a área (no Godot sem tela, para medir só o processador)
