@@ -21,6 +21,8 @@ import android.util.Log;
 
 import org.godotengine.godot.utils.ProcessPhoenix;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.util.List;
 
 /**
@@ -34,7 +36,10 @@ import java.util.List;
  *    na tomada, ao voltar para o início e a cada HOME. estado() diz se já é;
  *    escolher() abre a escolha do Android (o papel HOME do Android 10+, os
  *    ajustes da tela inicial ou a janela "Sempre / Só uma vez") - o jogo
- *    pede sozinho enquanto não for (TelaCheia, sozinho = true).
+ *    pede sozinho enquanto não for (TelaCheia, sozinho = true). Android TV
+ *    10+ que não deixa trocar a tela inicial: o jogo pede "Sobrepor a
+ *    outros apps", que libera o aviso de "ligou" (podeAbrirDeFundo). Pelo PC
+ *    (PREPARAR_TV.bat, adb) as duas coisas ficam feitas sem perguntar.
  * 2. VOLTA DA ESPERA: desligada pelo CONTROLE, a TV não desliga de verdade
  *    (fica em espera) e nada "liga" de novo - um app de "abrir ao ligar" não
  *    percebe nada. Com o processo do jogo vivo (mesmo fechado ou atrás de
@@ -175,6 +180,11 @@ final class InicioDaTv {
 			return "escolha";
 		}
 		if (sozinho) {
+			// a TV não deixa trocar a tela inicial por aqui (Android TV 10+):
+			// com "Sobrepor a outros apps" o aviso de "ligou" abre o jogo
+			if (!podeAbrirDeFundo(a) && pedirSobrepor(a)) {
+				return "sobrepor";
+			}
 			return "";
 		}
 		ResolveInfo ri = padrao(a);
@@ -186,6 +196,60 @@ final class InicioDaTv {
 			return "config";
 		}
 		return "";
+	}
+
+	// ------------------------------------------------------------ Android 10+
+	/**
+	 * ANDROID 10 OU MAIS NOVO (as TVs com Android TV 10 a 14): o Android não
+	 * deixa um app abrir uma tela "de fundo" - o aviso de "ligou" (DragonLigou)
+	 * e a volta da espera (ouvirTela) ficam barrados. A exceção é o app com
+	 * "Sobrepor a outros apps" (SYSTEM_ALERT_WINDOW) permitido: com ela o jogo
+	 * abre sozinho ao ligar mesmo sem ser a tela inicial. No Android 7.1 (TV
+	 * Box) não há essa barreira.
+	 */
+	static boolean podeAbrirDeFundo(Context c) {
+		if (Build.VERSION.SDK_INT < 29) {
+			return true;
+		}
+		try {
+			return Settings.canDrawOverlays(c);
+		} catch (Throwable t) {
+			return false;
+		}
+	}
+
+	/** Abre o "Sobrepor a outros apps" do jogo (ou a lista); false se a TV não tem essa tela. */
+	static boolean pedirSobrepor(Context c) {
+		if (abrir(c, new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:" + c.getPackageName())))) {
+			return true;
+		}
+		return abrir(c, new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION));
+	}
+
+	/**
+	 * Para a tela de configuração do jogo (SELECT): user://inicio_tv.cfg, uma
+	 * linha "nome=valor" por item - tela_inicial (estado()), sobrepor (sim,
+	 * nao ou nao_precisa) e a versão do Android.
+	 */
+	static void gravarEstado(Context c) {
+		String sobrepor = Build.VERSION.SDK_INT < 29 ? "nao_precisa" : (podeAbrirDeFundo(c) ? "sim" : "nao");
+		String texto = "tela_inicial=" + estado(c).replace('\n', ' ') + "\nsobrepor=" + sobrepor
+				+ "\nandroid=" + Build.VERSION.RELEASE + "\nsdk=" + Build.VERSION.SDK_INT + "\n";
+		File arquivo = new File(c.getFilesDir(), "inicio_tv.cfg");
+		FileOutputStream saida = null;
+		try {
+			saida = new FileOutputStream(arquivo);
+			saida.write(texto.getBytes("UTF-8"));
+		} catch (Throwable t) {
+			Log.i(TAG, "inicio: estado: " + t);
+		} finally {
+			if (saida != null) {
+				try {
+					saida.close();
+				} catch (Throwable ignored) {
+				}
+			}
+		}
 	}
 
 	// ------------------------------------------------------------ saída

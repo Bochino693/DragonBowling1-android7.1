@@ -1,9 +1,10 @@
 # Confere o APK pronto da TV Box (Dragon Bowling, Godot 3.6.3, OpenGL ES 2.0)
 # feito pelo montar_apk.sh: assinatura (e se é a chave do projeto), manifesto
-# (pacote, só a permissão de abrir ao ligar, recursos opcionais, a atividade
-# de tela cheia na lista de apps da TV, a tela inicial e o aviso de "ligou"
-# do método do Strike Kids), as duas ABIs do Godot, o projeto em assets/, o
-# classes2.dex com a TelaCheia e o InicioDaTv e o tema de tela cheia.
+# (pacote, só as permissões de abrir ao ligar, só na memória interna,
+# recursos opcionais, a atividade de tela cheia na lista de apps da TV, a
+# tela inicial e o aviso de "ligou" do método do Strike Kids), as duas ABIs
+# do Godot, o projeto em assets/, o classes2.dex com a TelaCheia e o
+# InicioDaTv e o tema de tela cheia.
 # Precisa do androguard (python do venv):
 #   python -I conferir_apk.py <apk> [--certificado <sha256>]
 # Sai com código 1 se algo falhar.
@@ -29,6 +30,7 @@ ATIVIDADE = 'com.lazersport.dragonbowling.TelaCheia'
 INICIO = 'com.lazersport.dragonbowling.DragonInicioAtivo'
 LIGOU = 'com.lazersport.dragonbowling.DragonLigou'
 PERMISSAO_LIGOU = 'android.permission.RECEIVE_BOOT_COMPLETED'
+PERMISSAO_SOBREPOR = 'android.permission.SYSTEM_ALERT_WINDOW'
 ABIS = ['arm64-v8a', 'armeabi-v7a']
 CATEGORIAS = ['android.intent.category.LAUNCHER', 'android.intent.category.LEANBACK_LAUNCHER']
 
@@ -59,11 +61,15 @@ if CERTIFICADO:
     certs = {hashlib.sha256(c.dump()).hexdigest() for c in a.get_certificates()}
     checar(CERTIFICADO in certs, 'assinado com a chave do projeto (sha256 %s...)' % CERTIFICADO[:16])
 
-# só a permissão do aviso de "ligou" (o Android dá na instalação, sem
-# perguntar nada): o jogo usa só a placa Zero Delay
+# só as permissões de abrir ao ligar (nenhuma é perguntada na instalação):
+# o aviso de "ligou" e, no Android 10+, o "Sobrepor a outros apps" que
+# deixa esse aviso abrir o jogo. O jogo usa só a placa Zero Delay
 perms = sorted(a.get_permissions())
 print('permissões:', perms)
-checar(perms == [PERMISSAO_LIGOU], 'só a permissão RECEIVE_BOOT_COMPLETED')
+checar(perms == sorted([PERMISSAO_LIGOU, PERMISSAO_SOBREPOR]), 'só RECEIVE_BOOT_COMPLETED e SYSTEM_ALERT_WINDOW')
+# o jogo SÓ na memória interna (nunca num pendrive ou cartão, de onde sumiria)
+local = m.get(NS + 'installLocation')
+checar(local in ('1', 'internalOnly'), 'só na memória interna (installLocation = %s)' % local)
 feats = {(f.get(NS + 'name'), f.get(NS + 'required')) for f in m.findall('uses-feature')}
 gles = [f.get(NS + 'glEsVersion') for f in m.findall('uses-feature') if f.get(NS + 'glEsVersion')]
 print('uses-feature:', sorted(str(f) for f in feats), '| glEsVersion:', gles)

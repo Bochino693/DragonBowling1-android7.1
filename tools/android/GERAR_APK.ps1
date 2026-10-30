@@ -8,7 +8,16 @@
     # Caminho do Godot 3.6.3 (opcional: se nao achar, o script baixa)
     [string]$CaminhoGodot = "",
     # Pasta de trabalho (opcional: o padrao e C:\DragonBowlingG3)
-    [string]$PastaTrabalho = ""
+    [string]$PastaTrabalho = "",
+    # PREPARAR_TV.bat: so prepara a TV pelo adb com o APK de APK-Pronto (nao gera)
+    [switch]$PrepararTv,
+    # IP da TV na rede (adb pela rede; sem ele, a TV ja ligada no adb ou pergunta)
+    [string]$Ip = "",
+    # desliga as outras telas iniciais (a da TV): so o jogo abre ao ligar
+    [switch]$SoOJogo,
+    # Depuracao por Wi-Fi (Android 11+): "IP:porta" e o codigo da tela "Parear"
+    [string]$Parear = "",
+    [string]$Codigo = ""
 )
 # DRAGON BOWLING - TV BOX MALI-450 (Godot 3.6.3, OpenGL ES 2.0) - GERAR APK.
 # Rode pelo GERAR_APK_AGORA.bat (na pasta do projeto).
@@ -1004,18 +1013,20 @@ function Conferir-Apk([string]$Apk) {
         foreach ($d in @($nomes.Keys | Where-Object { $_ -match '^classes\d*\.dex$' })) {
             if ((Texto-Binario (Bytes-Do-Zip $z $d)).Contains("Lcom/lazersport/dragon/usbserial/")) { throw "o APK saiu com o plugin USB antigo ($d)." }
         }
-        # SO a permissao do aviso de "ligou" (RECEIVE_BOOT_COMPLETED: o Android
-        # da na instalacao, sem perguntar nada); o jogo usa so a placa Zero Delay
+        # SO as permissoes de abrir ao ligar, que o Android nao pergunta na
+        # instalacao: o aviso de "ligou" (RECEIVE_BOOT_COMPLETED) e, no Android
+        # 10+, o "Sobrepor a outros apps" (SYSTEM_ALERT_WINDOW) que deixa esse
+        # aviso abrir o jogo; o jogo usa so a placa Zero Delay
         $manifesto = Texto-Binario (Bytes-Do-Zip $z "AndroidManifest.xml")
         if (-not $manifesto.Contains("com.lazersport.dragonbowling.TelaCheia")) { throw "o manifesto do APK nao abre a tela cheia (modelo errado?)." }
         # (o android.permission.DUMP do modelo oficial nao e pedido ao Android:
         # e quem pode chamar um receptor interno do androidx)
-        $permitidas = @("android.permission.DUMP", "android.permission.RECEIVE_BOOT_COMPLETED")
+        $permitidas = @("android.permission.DUMP", "android.permission.RECEIVE_BOOT_COMPLETED", "android.permission.SYSTEM_ALERT_WINDOW")
         $pedidas = @([Regex]::Matches($manifesto, 'android\.permission\.[A-Z_]+') | ForEach-Object { $_.Value } | Where-Object { $permitidas -notcontains $_ } | Select-Object -Unique)
         if ($pedidas.Count -gt 0) { throw "o APK pede permissao ($($pedidas -join ', ')): o Android faria perguntas." }
         if ($manifesto.Contains("android.hardware.usb.action.USB_DEVICE_ATTACHED")) { throw "o APK abre com o USB (plugin antigo?): o Android faria perguntas." }
         foreach ($c in @("android.intent.category.LEANBACK_LAUNCHER", "android.intent.category.HOME", "android.permission.RECEIVE_BOOT_COMPLETED",
-                "android.intent.action.BOOT_COMPLETED", "android.intent.action.QUICKBOOT_POWERON",
+                "android.permission.SYSTEM_ALERT_WINDOW", "android.intent.action.BOOT_COMPLETED", "android.intent.action.QUICKBOOT_POWERON",
                 "com.lazersport.dragonbowling.DragonInicioAtivo", "com.lazersport.dragonbowling.DragonLigou")) {
             if (-not $manifesto.Contains($c)) { throw "o manifesto do APK ficou sem $c." }
         }
@@ -1031,7 +1042,11 @@ function Conferir-Apk([string]$Apk) {
 
 function Principal {
     Write-Host "============================================================" -ForegroundColor Cyan
-    Write-Host " DRAGON BOWLING - GERAR APK DA TV BOX (MALI-450)" -ForegroundColor Cyan
+    if ($PrepararTv) {
+        Write-Host " DRAGON BOWLING - PREPARAR A TV (adb): instalar e abrir ao ligar" -ForegroundColor Cyan
+    } else {
+        Write-Host " DRAGON BOWLING - GERAR APK DA TV BOX (MALI-450)" -ForegroundColor Cyan
+    }
     Write-Host " (Godot 3.6.3, OpenGL ES 2.0 - S905L, TX9 e parecidas)" -ForegroundColor Cyan
     Write-Host "============================================================" -ForegroundColor Cyan
     Write-Host " A 1a vez baixa o que faltar e pode levar de 5 a 20 min."
@@ -1048,7 +1063,8 @@ function Principal {
         if (-not (Test-Path -LiteralPath (Join-Path $Projeto $f))) { throw "falta $f no projeto (extraia o ZIP inteiro)." }
     }
     if (-not [Environment]::Is64BitOperatingSystem) { throw "este gerador precisa do Windows 64 bits." }
-    if ($Instalar) { $script:TotalEtapas = 10 }
+    if ($Instalar) { $script:TotalEtapas = 13 }
+    if ($PrepararTv) { $script:TotalEtapas = 6 }
 
     Titulo "Pasta de trabalho"
     $script:Trabalho = Escolher-Trabalho
@@ -1063,6 +1079,13 @@ function Principal {
         Info ("Espaco livre em {0} {1:N1} GB" -f $drive, ($livre / 1GB))
         if ($livre -lt 3GB) { Aviso "pouco espaco: a 1a geracao precisa de uns 2 GB (Godot, Java, modelo, importacao)." }
     } catch { }
+
+    if ($PrepararTv) {
+        Titulo "adb (Android platform-tools)"
+        Garantir-Adb
+        Preparar-Tv (Join-Path (Join-Path $Projeto "APK-Pronto") $NomeApk)
+        return
+    }
 
     Titulo "Godot 3.6.3"
     Garantir-Godot
@@ -1109,24 +1132,176 @@ function Principal {
     Write-Host "  Versao:  $($script:NomeVersao)   pacote: $Pacote"
     Write-Host "  SHA256:  $hash"
     Write-Host "  So a placa Zero Delay: o Android nao pergunta nada na instalacao." -ForegroundColor Green
-    Write-Host "  ABRE SOZINHO AO LIGAR: na 1a vez o jogo pede para ser a tela inicial;" -ForegroundColor Green
-    Write-Host "  escolha Dragon Bowling e SEMPRE (como no Strike Kids)." -ForegroundColor Green
+    Write-Host "  ABRE SOZINHO AO LIGAR: o jeito garantido e o PREPARAR_TV.bat (PC na rede da TV)." -ForegroundColor Green
+    Write-Host "  Sem PC: abra o jogo e deixe 20 s parado; aceite o que ele pedir (tela inicial" -ForegroundColor Green
+    Write-Host "  SEMPRE, ou Sobrepor a outros apps LIGADO)." -ForegroundColor Green
+    Write-Host "  So instala na memoria interna da TV (nunca no pendrive)." -ForegroundColor Green
     Write-Host "  1a VEZ COM ESTA CHAVE: desinstale da TV Box o Dragon Bowling antigo" -ForegroundColor Yellow
     Write-Host "  (Build 10 ou anterior, assinado com outra chave) e instale este." -ForegroundColor Yellow
     Write-Host "  Depois disso, os proximos instalam POR CIMA, sem desinstalar."
     Write-Host "  Instale este APK na TV Box (pendrive + gerenciador de arquivos, ou adb)."
 
     if ($Instalar) {
-        Titulo "Instalando na TV Box (adb)"
-        $cod = Executar $script:Adb @("install", "-r", $final) -Log (Join-Path $script:Logs "adb-instalar.log") -LimiteMin 10 -Rotulo "adb"
-        if ($cod -eq 0) {
-            [void](Executar $script:Adb @("shell", "monkey", "-p", $Pacote, "-c", "android.intent.category.LAUNCHER", "1") -Log (Join-Path $script:Logs "adb-abrir.log") -LimiteMin 2 -Rotulo "adb" -Quieto)
-            Ok "instalado e aberto na TV Box"
-        } else {
-            Aviso "o adb nao instalou (TV Box conectada? depuracao ligada?). Se aparecer INSTALL_FAILED_UPDATE_INCOMPATIBLE, desinstale o Dragon Bowling antigo da TV Box e rode de novo."
-        }
-        try { [void](Executar $script:Adb @("kill-server") -Log (Join-Path $script:Logs "adb-parar.log") -LimiteMin 1 -Rotulo "adb" -Quieto) } catch { }
+        # o mesmo do PREPARAR_TV.bat: instala, tela inicial, sobrepor, confere
+        Preparar-Tv $final
     }
+}
+
+# ------------------------------------------------- preparar a TV (adb)
+
+# PREPARAR_TV.bat (ou GERAR_APK_AGORA.bat -Instalar): o "ultimo recurso pelo
+# PC" do Strike Kids (GERAR_APK.bat -TelaInicial), completo. Pelo adb, na
+# TV (placa da TV ou TV Box, Android 7.1 a 14) com a depuracao ligada:
+#  - instala o jogo (so na memoria interna: o APK nao deixa ir para pendrive)
+#    e abre uma vez (o Android so avisa "ligou" a um app ja aberto);
+#  - o jogo vira a TELA INICIAL (abre ao ligar, ao voltar da espera e a cada
+#    HOME) - inclusive no Android TV, que nao deixa trocar pelos ajustes;
+#  - "Sobrepor a outros apps" permitido: no Android 10+ e o que deixa o aviso
+#    de "ligou" abrir o jogo (a segunda garantia);
+#  - -SoOJogo: desliga as outras telas iniciais (a da TV): so sobra o jogo;
+#  - confere tudo e mostra SIM/NAO de cada item.
+# Na TV nada e perguntado, menos na 1a conexao: "Permitir depuracao?".
+
+$InicioAtivo = "com.lazersport.dragonbowling.DragonInicioAtivo"
+
+# Um comando adb na TV escolhida; devolve a saida (texto) ou "" se demorar.
+function Adb([string[]]$Argumentos, [int]$Segundos = 60) {
+    $a = @()
+    if ($script:Serial) { $a += @("-s", $script:Serial) }
+    return (Saida-De $script:Adb ($a + $Argumentos) $Segundos).Trim()
+}
+
+function Tvs-No-Adb {
+    return @((Saida-De $script:Adb @("devices") 20) -split "`r?`n" | ForEach-Object { $_.Trim() } |
+        Where-Object { $_ -match '^\S+\s+(device|unauthorized|offline|authorizing)$' })
+}
+
+function Ligar-Tv {
+    [void](Saida-De $script:Adb @("start-server") 30)
+    $alvo = $Ip.Trim()
+    if (-not $alvo -and @(Tvs-No-Adb).Count -eq 0) {
+        Info "Na TV: Configuracoes > Rede e Internet > (a rede) mostra o ENDERECO IP."
+        $alvo = (Read-Host "    IP da TV (ex.: 192.168.0.50)").Trim()
+        if (-not $alvo) { throw "sem o IP da TV: rode de novo e digite o IP (ou PREPARAR_TV.bat -Ip <IP da TV>)." }
+    }
+    if ($Parear) {
+        if (-not $Codigo) { throw "-Parear precisa do -Codigo (o codigo de 6 digitos da tela 'Parear dispositivo' da TV)." }
+        Info ("parear: " + (Saida-De $script:Adb @("pair", $Parear, $Codigo) 60).Trim())
+    }
+    if ($alvo) {
+        if ($alvo -notmatch ':\d+$') { $alvo = "${alvo}:5555" }
+        Info "conectando em $alvo (a TV e o PC na mesma rede)..."
+        Info ((Saida-De $script:Adb @("connect", $alvo) 30).Trim())
+        $script:Serial = $alvo
+        $script:PelaRede = $true
+    }
+    # espera a TV aparecer pronta (na 1a vez a TV pergunta "Permitir depuracao?")
+    $avisou = $false
+    for ($i = 0; $i -lt 60; $i++) {
+        $linhas = @(Tvs-No-Adb)
+        if ($script:Serial) { $linhas = @($linhas | Where-Object { $_.StartsWith($script:Serial) }) }
+        $prontas = @($linhas | Where-Object { $_ -match '\sdevice$' })
+        if ($prontas.Count -eq 1) {
+            $script:Serial = ($prontas[0] -split '\s+')[0]
+            Ok "TV no adb: $($script:Serial)"
+            return
+        }
+        if ($prontas.Count -gt 1) { throw "mais de uma TV no adb: rode PREPARAR_TV.bat -Ip <IP da TV>." }
+        if (-not $avisou -and @($linhas | Where-Object { $_ -match 'unauthorized|authorizing' }).Count -gt 0) {
+            Aviso "NA TV: aceite 'Permitir depuracao' e marque 'Sempre permitir deste computador'."
+            $avisou = $true
+        }
+        if ($i -eq 0 -and $script:Serial -and $linhas.Count -eq 0) {
+            [void](Saida-De $script:Adb @("connect", $script:Serial) 30)
+        }
+        Start-Sleep -Seconds 2
+    }
+    throw ("a TV nao apareceu no adb. Na TV: Configuracoes > Sistema > Sobre > clique 7 vezes em 'Build do SO do Android TV' " +
+        "(liga as Opcoes do desenvolvedor) > Opcoes do desenvolvedor > Depuracao USB LIGADA (e 'Depuracao por rede', se houver). " +
+        "PC e TV na mesma rede; rode PREPARAR_TV.bat -Ip <IP da TV>.")
+}
+
+function Instalar-Na-Tv([string]$Apk) {
+    $log = Join-Path $script:Logs "adb-instalar.log"
+    $cod = Executar $script:Adb @("-s", $script:Serial, "install", "-r", $Apk) -Log $log -LimiteMin 10 -Rotulo "adb"
+    $texto = Ler-Log $log
+    if ($texto -match 'Success') { Ok "instalado: $(Split-Path $Apk -Leaf)"; return }
+    if ($texto -match 'INSTALL_FAILED_UPDATE_INCOMPATIBLE') {
+        throw "a TV tem um Dragon Bowling com outra assinatura (build 10 ou anterior): desinstale-o da TV e rode de novo (os recordes zeram)."
+    }
+    if ($texto -match 'INSTALL_FAILED_VERSION_DOWNGRADE') { throw "a TV tem um Dragon Bowling MAIS NOVO que este APK: use o APK mais novo." }
+    if ($texto -match 'INSUFFICIENT_STORAGE') { throw "falta espaco na MEMORIA INTERNA da TV: apague apps que nao usa e rode de novo." }
+    throw "o adb nao instalou (codigo $cod; veja adb-instalar.log)."
+}
+
+function Preparar-Tv([string]$Apk) {
+    if (-not (Test-Path -LiteralPath $Apk)) { throw "falta o APK: $Apk (gere com o GERAR_APK_AGORA.bat ou copie o APK pronto para APK-Pronto)." }
+    Titulo "TV no adb"
+    Ligar-Tv
+
+    Titulo "Instalando o jogo na memoria interna"
+    Instalar-Na-Tv $Apk
+    $sdk = 0
+    [void][int]::TryParse((Adb @("shell", "getprop", "ro.build.version.sdk")), [ref]$sdk)
+    $versao = Adb @("shell", "getprop", "ro.build.version.release")
+    Info "Android $versao (API $sdk)"
+    $caminho = Adb @("shell", "pm", "path", $Pacote)
+    if ($caminho -match '/mnt/expand/') {
+        Aviso "o jogo ficou num pendrive/cartao formatado como memoria da TV: desinstale e instale de novo."
+    } elseif ($caminho -match 'package:/data/') {
+        Ok "na memoria interna da TV"
+    }
+    # aberto uma vez: o Android so avisa "ligou" a um app que ja foi aberto
+    [void](Adb @("shell", "monkey", "-p", $Pacote, "-c", "android.intent.category.LAUNCHER", "1"))
+
+    Titulo "Abrir sozinho ao ligar"
+    [void](Adb @("shell", "cmd", "package", "set-home-activity", "$Pacote/$InicioAtivo"))
+    if ($sdk -ge 29) { [void](Adb @("shell", "cmd", "role", "add-role-holder", "android.app.role.HOME", $Pacote)) }
+    if ($sdk -ge 23) {
+        [void](Adb @("shell", "appops", "set", $Pacote, "SYSTEM_ALERT_WINDOW", "allow"))
+        # fora da economia de energia (o Android nao "adormece" o jogo)
+        [void](Adb @("shell", "dumpsys", "deviceidle", "whitelist", "+$Pacote"))
+    }
+    $desligadas = @()
+    if ($SoOJogo) {
+        $outras = @((Adb @("shell", "cmd", "package", "query-activities", "--brief", "-a", "android.intent.action.MAIN", "-c", "android.intent.category.HOME")) -split "`r?`n" |
+            ForEach-Object { $_.Trim() } | Where-Object { $_ -match '^[A-Za-z0-9_.]+/' } | ForEach-Object { ($_ -split '/')[0] } | Select-Object -Unique)
+        foreach ($p in $outras) {
+            # os Ajustes (a tela de inicio do comeco do boot) nunca
+            if ($p -eq $Pacote -or $p -match '^com\.android\.(tv\.)?settings$') { continue }
+            $r = Adb @("shell", "pm", "disable-user", "--user", "0", $p)
+            if ($r -match 'disabled') { $desligadas += $p; Ok "tela inicial da TV desligada: $p" } else { Aviso "nao desliguei $p ($r)" }
+        }
+    }
+
+    Titulo "Conferindo"
+    $casa = Adb @("shell", "cmd", "package", "resolve-activity", "--brief", "-a", "android.intent.action.MAIN", "-c", "android.intent.category.HOME")
+    $ultima = @($casa -split "`r?`n" | ForEach-Object { $_.Trim() } | Where-Object { $_ })
+    $ehCasa = $ultima.Count -gt 0 -and $ultima[-1].StartsWith("$Pacote/")
+    if (-not $ehCasa -and $sdk -ge 29) { $ehCasa = (Adb @("shell", "cmd", "role", "get-role-holders", "android.app.role.HOME")) -match [Regex]::Escape($Pacote) }
+    $sobrepor = $true
+    if ($sdk -ge 29) { $sobrepor = (Adb @("shell", "appops", "get", $Pacote, "SYSTEM_ALERT_WINDOW")) -match 'allow' }
+    if ($ehCasa) {
+        Ok "TELA INICIAL: o jogo (abre ao ligar, ao voltar da espera e a cada HOME)"
+    } else {
+        Aviso "a TV nao aceitou o jogo como tela inicial ($($ultima -join ' | ')). Tente PREPARAR_TV.bat -SoOJogo."
+    }
+    if ($sdk -ge 29 -and $sobrepor) {
+        Ok "SOBREPOR A OUTROS APPS: permitido (o aviso de 'ligou' abre o jogo)"
+    } elseif ($sdk -ge 29) {
+        Aviso "SOBREPOR A OUTROS APPS: a TV nao permitiu pelo adb."
+    }
+    [void](Adb @("shell", "monkey", "-p", $Pacote, "-c", "android.intent.category.LAUNCHER", "1"))
+    Write-Host ""
+    if ($ehCasa -or ($sdk -ge 29 -and $sobrepor) -or $sdk -lt 29) {
+        Write-Host "TV PRONTA: o Dragon Bowling abre sozinho ao ligar." -ForegroundColor Green
+    } else {
+        Write-Host "TV AINDA NAO ABRE O JOGO SOZINHA: veja os avisos acima." -ForegroundColor Yellow
+    }
+    Write-Host "  Confira: tire a TV da tomada, espere 10 s e ligue - o jogo abre sozinho."
+    Write-Host "  Para usar a TV (ajustes, outros apps): HOME 5 vezes seguidas; um HOME volta ao jogo."
+    foreach ($p in $desligadas) { Write-Host "  Para religar a tela inicial da TV: adb shell pm enable $p" }
+    if ($script:PelaRede) { [void](Saida-De $script:Adb @("disconnect", $script:Serial) 15) }
 }
 
 # ------------------------------------------------------------------ inicio

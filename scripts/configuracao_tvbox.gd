@@ -52,6 +52,7 @@ func _ready() -> void:
 
 	_rodape = _rotulo(fonte, "", Vector2(0, 1380), 24, Color(1, 1, 1, 0.5))
 	_medidor_de_tela(fonte)
+	_abre_ao_ligar(fonte)
 	_ultimo_toque_ms = Time.get_ticks_msec()
 	_atualizar()
 
@@ -75,6 +76,43 @@ func _medidor_de_tela(fonte: Font) -> void:
 	var area: Rect2 = OS.get_window_safe_area()
 	var texto = "TELA: JOGO %dx%d  ·  ANDROID %dx%d" % [OS.window_size.x, OS.window_size.y, area.size.x, area.size.y]
 	_rotulo(fonte, texto, Vector2(0, 1440), 22, Color(0.55, 1.0, 0.65, 0.85))
+
+
+## O JOGO ABRE SOZINHO AO LIGAR? O Android do jogo (TelaCheia, InicioDaTv)
+## grava user://inicio_tv.cfg sempre que o jogo volta para a frente:
+## tela_inicial (jogo, escolher ou outra|Nome), sobrepor (sim, nao ou
+## nao_precisa: Android 7.1) e a versão do Android. Sem o arquivo (PC), nada.
+func _abre_ao_ligar(fonte: Font) -> void:
+	var f := File.new()
+	if f.open("user://inicio_tv.cfg", File.READ) != OK:
+		return
+	var estado := {}
+	for linha in f.get_as_text().split("\n", false):
+		var i: int = linha.find("=")
+		if i > 0:
+			estado[linha.substr(0, i)] = linha.substr(i + 1)
+	f.close()
+	var tela: String = estado.get("tela_inicial", "")
+	var sobrepor: String = estado.get("sobrepor", "")
+	var android: String = "ANDROID %s" % estado.get("android", "?")
+	var texto: String
+	var dica := ""
+	var cor := Color(0.35, 1.0, 0.55)
+	if tela == "jogo":
+		texto = "ABRE SOZINHO AO LIGAR: SIM (TELA INICIAL)"
+	elif sobrepor == "sim" or sobrepor == "nao_precisa":
+		texto = "ABRE SOZINHO AO LIGAR: SIM (AVISO DE LIGAR)"
+		if sobrepor == "nao_precisa":
+			dica = "MAIS GARANTIDO: HOME > DRAGON BOWLING > SEMPRE  ·  " + android
+		else:
+			dica = "MAIS GARANTIDO: PREPARAR_TV.bat NO PC (TELA INICIAL)  ·  " + android
+	else:
+		texto = "ABRE SOZINHO AO LIGAR: NÃO  ·  " + android
+		dica = "PERMITA \"SOBREPOR A OUTROS APPS\" OU RODE O PREPARAR_TV.bat NO PC"
+		cor = Color(1.0, 0.45, 0.35)
+	_rotulo(fonte, texto, Vector2(0, 1180), 26, cor)
+	if dica != "":
+		_rotulo(fonte, dica, Vector2(0, 1230), 20, Color(1, 1, 1, 0.7))
 
 
 func _rotulo(fonte: Font, texto: String, pos: Vector2, tamanho: int, cor: Color) -> Label:
