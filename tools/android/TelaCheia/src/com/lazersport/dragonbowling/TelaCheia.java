@@ -1,6 +1,5 @@
 package com.lazersport.dragonbowling;
 
-import android.content.Intent;
 import android.content.res.Resources;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
@@ -8,9 +7,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
-import android.os.SystemClock;
 import android.util.Log;
-import android.view.KeyEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowInsets;
@@ -34,8 +31,11 @@ import org.godotengine.godot.FullScreenGodotApp;
  *
  * O JOGO ABRE SOZINHO AO LIGAR (InicioDaTv, o método do Strike Kids): a
  * tela inicial (DragonInicioAtivo), o aviso de "ligou" (DragonLigou) e a
- * volta da espera (ouvirTela). Enquanto a TV não abre o jogo sozinha, o jogo
- * pede ao Android para ser a tela inicial ("Dragon Bowling" + SEMPRE).
+ * volta da espera (ouvirTela). O JOGO NUNCA ABRE JANELA NENHUMA SOZINHO: na
+ * máquina só há os botões da Zero Delay e ninguém consegue fechar uma janela
+ * do Android. A tela inicial e o "Sobrepor a outros apps" são deixados
+ * prontos pelo PC (PREPARAR_TV.bat, adb) ou pelo técnico com o controle
+ * remoto, nos ajustes.
  *
  * Feito por tools/android/TelaCheia/construir.sh (Java 8, sem Gradle).
  */
@@ -51,35 +51,16 @@ public class TelaCheia extends FullScreenGodotApp {
 			| WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
 			| WindowManager.LayoutParams.FLAG_LAYOUT_IN_OVERSCAN;
 
-	/**
-	 * O pedido da tela inicial (como o Strike Kids faz na tela de espera): uma
-	 * vez por abertura do jogo, com o jogo na frente e a placa SOSSEGADA (nenhum
-	 * botão nem sensor há SOSSEGO_MS): nunca no meio de uma partida.
-	 */
-	private static final long SOSSEGO_MS = 20000;
-	private static final long OLHAR_DE_NOVO_MS = 5000;
-	private static boolean telaInicialPedida = false;
 	private final Handler relogio = new Handler(Looper.getMainLooper());
-	private long ultimoToque = SystemClock.elapsedRealtime();
-	private final Runnable pedirTelaInicial = new Runnable() {
+
+	/** O estado do "abrir ao ligar" para a tela de configuração (SELECT) do jogo. */
+	private final Runnable gravarEstado = new Runnable() {
 		@Override
 		public void run() {
-			if (telaInicialPedida || isFinishing()) {
-				return;
-			}
-			if (SystemClock.elapsedRealtime() - ultimoToque < SOSSEGO_MS || !hasWindowFocus()) {
-				relogio.postDelayed(this, OLHAR_DE_NOVO_MS);
-				return;
-			}
-			telaInicialPedida = true;
 			try {
-				String estado = InicioDaTv.estado(TelaCheia.this);
-				if (!estado.equals("jogo")) {
-					Log.i("DragonBowling", "inicio: a TV ainda não abre o jogo (" + estado + "): "
-							+ InicioDaTv.escolher(TelaCheia.this, true));
-				}
+				InicioDaTv.gravarEstado(TelaCheia.this);
 			} catch (Throwable t) {
-				Log.i("DragonBowling", "inicio: tela inicial: " + t);
+				Log.i("DragonBowling", "inicio: estado: " + t);
 			}
 		}
 	};
@@ -114,57 +95,12 @@ public class TelaCheia extends FullScreenGodotApp {
 		InicioDaTv.ouvirTela(this);
 	}
 
-	/** O estado do "abrir ao ligar" para a tela de configuração (SELECT) do jogo. */
-	private final Runnable gravarEstado = new Runnable() {
-		@Override
-		public void run() {
-			try {
-				InicioDaTv.gravarEstado(TelaCheia.this);
-			} catch (Throwable t) {
-				Log.i("DragonBowling", "inicio: estado: " + t);
-			}
-		}
-	};
-
 	@Override
 	protected void onResume() {
 		super.onResume();
 		telaCheia();
-		// (de volta dos ajustes do Android: a configuração já mostra o novo estado)
+		// só grava o estado (nenhuma janela): a configuração mostra SIM ou NÃO
 		relogio.post(gravarEstado);
-		relogio.removeCallbacks(pedirTelaInicial);
-		if (!telaInicialPedida) {
-			relogio.postDelayed(pedirTelaInicial, OLHAR_DE_NOVO_MS);
-		}
-	}
-
-	@Override
-	protected void onPause() {
-		relogio.removeCallbacks(pedirTelaInicial);
-		super.onPause();
-	}
-
-	/**
-	 * Botão ou sensor da placa (ou o controle remoto): alguém está jogando.
-	 * (Só teclas e botões: um eixo de joystick que treme não pode impedir o
-	 * pedido para sempre - e o jogo não usa o direcional.)
-	 */
-	@Override
-	public boolean dispatchKeyEvent(KeyEvent evento) {
-		ultimoToque = SystemClock.elapsedRealtime();
-		return super.dispatchKeyEvent(evento);
-	}
-
-	@Override
-	public void onActivityResult(int pedido, int resultado, Intent dados) {
-		super.onActivityResult(pedido, resultado, dados);
-		if (pedido == InicioDaTv.PEDIDO_PAPEL) {
-			try {
-				InicioDaTv.depoisDoPapel(this, resultado);
-			} catch (Throwable t) {
-				Log.i("DragonBowling", "inicio: tela inicial: " + t);
-			}
-		}
 	}
 
 	@Override
