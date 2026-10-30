@@ -141,7 +141,9 @@ um `classes2.dex`), juntados na hora por `tools/android/remendo_apk.jar`.
   ser trocada). Recursos do modelo pelo NOME no pacote `com.godot.game`: o
   Godot muda o pacote do APK, não o dos recursos.
 - `tools/android/modelo_android.py` (apktool, só no Linux) refaz o
-  `extras.zip`: atividade, tema de tela cheia, `LEANBACK_LAUNCHER` + `HOME`,
+  `extras.zip`: atividade, tema de tela cheia, `LEANBACK_LAUNCHER`, a tela
+  inicial (`DragonInicioAtivo`, `HOME`) e o aviso de "ligou" (`DragonLigou`,
+  `BOOT_COMPLETED`) do Strike Kids (`InicioDaTv`: o jogo abre sozinho ao ligar),
   touchscreen/leanback opcionais.
 - `GERAR_APK_AGORA.bat` → `tools/android/GERAR_APK.ps1` (Windows) e
   `tools/android/montar_apk.sh` (Linux): copiam **só** os arquivos de

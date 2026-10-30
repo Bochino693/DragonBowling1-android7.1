@@ -1,8 +1,9 @@
 # Confere o APK pronto da TV Box (Dragon Bowling, Godot 3.6.3, OpenGL ES 2.0)
 # feito pelo montar_apk.sh: assinatura (e se é a chave do projeto), manifesto
-# (pacote, NENHUMA permissão, recursos opcionais, a atividade de tela cheia
-# na tela inicial da TV e como início da máquina), as duas ABIs do Godot, o
-# projeto em assets/, o classes2.dex com a TelaCheia e o tema de tela cheia.
+# (pacote, só a permissão de abrir ao ligar, recursos opcionais, a atividade
+# de tela cheia na lista de apps da TV, a tela inicial e o aviso de "ligou"
+# do método do Strike Kids), as duas ABIs do Godot, o projeto em assets/, o
+# classes2.dex com a TelaCheia e o InicioDaTv e o tema de tela cheia.
 # Precisa do androguard (python do venv):
 #   python -I conferir_apk.py <apk> [--certificado <sha256>]
 # Sai com código 1 se algo falhar.
@@ -25,9 +26,11 @@ CERTIFICADO = ARGS[ARGS.index('--certificado') + 1].lower().replace(':', '') if 
 NS = '{http://schemas.android.com/apk/res/android}'
 PACOTE = 'com.lazersport.dragonbowling.s905l'
 ATIVIDADE = 'com.lazersport.dragonbowling.TelaCheia'
+INICIO = 'com.lazersport.dragonbowling.DragonInicioAtivo'
+LIGOU = 'com.lazersport.dragonbowling.DragonLigou'
+PERMISSAO_LIGOU = 'android.permission.RECEIVE_BOOT_COMPLETED'
 ABIS = ['arm64-v8a', 'armeabi-v7a']
-CATEGORIAS = ['android.intent.category.LAUNCHER', 'android.intent.category.LEANBACK_LAUNCHER',
-              'android.intent.category.HOME', 'android.intent.category.DEFAULT']
+CATEGORIAS = ['android.intent.category.LAUNCHER', 'android.intent.category.LEANBACK_LAUNCHER']
 
 falhas = []
 
@@ -56,10 +59,11 @@ if CERTIFICADO:
     certs = {hashlib.sha256(c.dump()).hexdigest() for c in a.get_certificates()}
     checar(CERTIFICADO in certs, 'assinado com a chave do projeto (sha256 %s...)' % CERTIFICADO[:16])
 
-# nenhuma permissão: o jogo usa só a placa Zero Delay (o Android não pergunta nada)
+# só a permissão do aviso de "ligou" (o Android dá na instalação, sem
+# perguntar nada): o jogo usa só a placa Zero Delay
 perms = sorted(a.get_permissions())
 print('permissões:', perms)
-checar(not perms, 'nenhuma permissão')
+checar(perms == [PERMISSAO_LIGOU], 'só a permissão RECEIVE_BOOT_COMPLETED')
 feats = {(f.get(NS + 'name'), f.get(NS + 'required')) for f in m.findall('uses-feature')}
 gles = [f.get(NS + 'glEsVersion') for f in m.findall('uses-feature') if f.get(NS + 'glEsVersion')]
 print('uses-feature:', sorted(str(f) for f in feats), '| glEsVersion:', gles)
@@ -102,7 +106,27 @@ if principal is not None:
           principal.get(NS + 'theme'), '| categorias:', cats)
     for c in CATEGORIAS:
         checar(c in cats, 'TelaCheia com %s' % c.split('.')[-1])
+    # a tela inicial é a DragonInicioAtivo: um "Dragon Bowling" só na escolha
+    checar('android.intent.category.HOME' not in cats, 'TelaCheia sem HOME (a tela inicial é a %s)' % INICIO.split('.')[-1])
 checar(a.get_main_activity() == ATIVIDADE, 'a TelaCheia é a que abre o jogo')
+
+# O JOGO ABRE SOZINHO AO LIGAR (o método do Strike Kids): a tela inicial
+inicio = atividades.get(INICIO)
+checar(inicio is not None, 'atividade da tela inicial ' + INICIO)
+if inicio is not None:
+    filtros = [([a_.get(NS + 'name') for a_ in f.findall('action')], [c.get(NS + 'name') for c in f.findall('category')])
+               for f in inicio.findall('intent-filter')]
+    print('   exported=%s noHistory=%s filtros=%s' % (inicio.get(NS + 'exported'), inicio.get(NS + 'noHistory'), filtros))
+    checar(any('android.intent.action.MAIN' in acs and 'android.intent.category.HOME' in cs
+               and 'android.intent.category.DEFAULT' in cs for acs, cs in filtros), '   MAIN + HOME + DEFAULT')
+    checar(inicio.get(NS + 'exported') == 'true', '   exported')
+casas = [c.get(NS + 'name') for q in m.findall('queries') for i in q.findall('intent') for c in i.findall('category')]
+checar('android.intent.category.HOME' in casas, '<queries> das telas iniciais (Android 11+)')
+# e o aviso de "ligou" (na tomada)
+ligou = [r for r in app.findall('receiver') if r.get(NS + 'name') == LIGOU]
+acoes_ligou = [a_.get(NS + 'name') for r in ligou for f in r.findall('intent-filter') for a_ in f.findall('action')]
+checar('android.intent.action.BOOT_COMPLETED' in acoes_ligou and 'android.intent.action.QUICKBOOT_POWERON' in acoes_ligou,
+       'DragonLigou com BOOT_COMPLETED e QUICKBOOT_POWERON (%s)' % acoes_ligou)
 
 # o tema de tela cheia (o que a TelaCheia procura pelo nome)
 pk = res.get_packages_names()[0]
@@ -124,8 +148,10 @@ checar(tela is not None, 'classes2.dex tem a TelaCheia')
 if tela is not None:
     checar(tela.get_superclassname() == 'Lorg/godotengine/godot/FullScreenGodotApp;', 'TelaCheia estende FullScreenGodotApp')
     metodos = {mt.get_name() for mt in tela.get_methods()}
-    for nome in ('onCreate', 'onResume', 'onWindowFocusChanged'):
+    for nome in ('onCreate', 'onResume', 'onWindowFocusChanged', 'onActivityResult'):
         checar(nome in metodos, '   TelaCheia.%s' % nome)
+for nome in ('DragonInicioAtivo', 'DragonLigou', 'InicioDaTv'):
+    checar('Lcom/lazersport/dragonbowling/%s;' % nome in classes2, 'classes2.dex tem a ' + nome)
 checar(not any(k.startswith('Landroidx/') for k in classes2), 'classes2.dex sem androidx (o esqueleto não vazou)')
 outros = [n for n in arquivos if n.endswith('.dex') and n not in ('classes.dex', 'classes2.dex')]
 todos = set(nomes1) | set(classes2)

@@ -5,10 +5,15 @@ Dragon Bowling da TV Box - o mesmo que a Build 10 montava com o Gradle:
   - a atividade de TELA CHEIA (com.lazersport.dragonbowling.TelaCheia, no
     tools/android/TelaCheia/classes2.dex) no lugar da com.godot.game.GodotApp;
   - o tema de tela cheia, inclusive na área de overscan da TV;
-  - o jogo na tela inicial da TV (LEANBACK_LAUNCHER) e como aplicativo de
-    início da máquina (HOME), sem exigir tela de toque nem o modo leanback.
+  - o jogo na lista de apps da TV (LEANBACK_LAUNCHER), sem exigir tela de
+    toque nem o modo leanback;
+  - O JOGO ABRE SOZINHO AO LIGAR, com o mesmo método do Strike Kids
+    (InicioDaTv): a tela inicial invisível (DragonInicioAtivo, HOME), o
+    aviso de "ligou" (DragonLigou, BOOT_COMPLETED e QUICKBOOT_POWERON) e o
+    <queries> das telas iniciais (Android 11+).
 
-Sem plugin e sem nenhuma permissão: o jogo usa só a placa Zero Delay.
+Sem plugin. Uma permissão só, a RECEIVE_BOOT_COMPLETED (o Android dá na
+instalação, sem perguntar nada): o jogo usa só a placa Zero Delay.
 
     python3 -I tools/android/modelo_android.py <android_release.apk oficial> <apktool.jar>
 
@@ -30,6 +35,9 @@ AQUI = os.path.dirname(os.path.abspath(__file__))
 P = os.path.dirname(os.path.dirname(AQUI))
 SAIDA = os.path.join(P, "android", "modelo_android", "extras.zip")
 ATIVIDADE = "com.lazersport.dragonbowling.TelaCheia"
+INICIO = "com.lazersport.dragonbowling.DragonInicioAtivo"
+LIGOU = "com.lazersport.dragonbowling.DragonLigou"
+PERMISSAO_LIGOU = "android.permission.RECEIVE_BOOT_COMPLETED"
 
 
 def trocar_uma(texto, velho, novo, nome):
@@ -41,19 +49,42 @@ def injetar(manifesto):
     s = open(manifesto, encoding="utf-8").read()
     assert ATIVIDADE not in s, "manifesto já injetado"
     s = trocar_uma(s, 'android:name="com.godot.game.GodotApp"', 'android:name="%s"' % ATIVIDADE, "atividade GodotApp")
-    gl = '<uses-feature android:glEsVersion="0x00020000" android:required="true"/>'
-    # TV Box: nada de tela de toque nem do modo leanback obrigatórios
-    s = trocar_uma(s, gl, gl + '''
-    <uses-feature android:name="android.hardware.touchscreen" android:required="false"/>
-    <uses-feature android:name="android.software.leanback" android:required="false"/>''', "glEsVersion")
-    # tela inicial da TV e aplicativo de início da máquina, como na Build 10
-    a = '<category android:name="android.intent.category.LAUNCHER"/>'
-    s = trocar_uma(s, a, a + '''
-                <category android:name="android.intent.category.LEANBACK_LAUNCHER"/>
-                <category android:name="android.intent.category.HOME"/>
-                <category android:name="android.intent.category.DEFAULT"/>''', "categoria LAUNCHER")
     assert "android.permission" not in s.replace('android:permission="android.permission.DUMP"', ""), \
         "o modelo oficial passou a pedir permissão"
+    gl = '<uses-feature android:glEsVersion="0x00020000" android:required="true"/>'
+    # TV Box: nada de tela de toque nem do modo leanback obrigatórios; a
+    # permissão do aviso de "ligou" e (Android 11+) enxergar as outras telas
+    # iniciais da TV
+    s = trocar_uma(s, gl, gl + '''
+    <uses-feature android:name="android.hardware.touchscreen" android:required="false"/>
+    <uses-feature android:name="android.software.leanback" android:required="false"/>
+    <uses-permission android:name="%s"/>
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.MAIN"/>
+            <category android:name="android.intent.category.HOME"/>
+        </intent>
+    </queries>''' % PERMISSAO_LIGOU, "glEsVersion")
+    # o jogo na lista de apps da TV
+    a = '<category android:name="android.intent.category.LAUNCHER"/>'
+    s = trocar_uma(s, a, a + '''
+                <category android:name="android.intent.category.LEANBACK_LAUNCHER"/>''', "categoria LAUNCHER")
+    # O JOGO ABRE SOZINHO AO LIGAR (o método do Strike Kids): a tela inicial
+    # invisível que traz o jogo e o aviso de "ligou"
+    s = trocar_uma(s, "    </application>", '''        <activity android:excludeFromRecents="true" android:exported="true" android:name="%s" android:noHistory="true" android:stateNotNeeded="true" android:theme="@android:style/Theme.Translucent.NoTitleBar">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.HOME"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+            </intent-filter>
+        </activity>
+        <receiver android:exported="true" android:name="%s">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED"/>
+                <action android:name="android.intent.action.QUICKBOOT_POWERON"/>
+            </intent-filter>
+        </receiver>
+    </application>''' % (INICIO, LIGOU), "fim do application")
     open(manifesto, "w", encoding="utf-8").write(s)
 
 
