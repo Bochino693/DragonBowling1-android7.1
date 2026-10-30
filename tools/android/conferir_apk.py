@@ -126,6 +126,9 @@ if inicio is not None:
     checar(any('android.intent.action.MAIN' in acs and 'android.intent.category.HOME' in cs
                and 'android.intent.category.DEFAULT' in cs for acs, cs in filtros), '   MAIN + HOME + DEFAULT')
     checar(inicio.get(NS + 'exported') == 'true', '   exported')
+    # desligada no APK: sem a janela "qual tela inicial usar" ao ligar (o
+    # PREPARAR_TV.bat liga e escolhe pelo adb)
+    checar(inicio.get(NS + 'enabled') in ('false', '0'), '   desligada no APK (enabled=%s)' % inicio.get(NS + 'enabled'))
 casas = [c.get(NS + 'name') for q in m.findall('queries') for i in q.findall('intent') for c in i.findall('category')]
 checar('android.intent.category.HOME' in casas, '<queries> das telas iniciais (Android 11+)')
 # e o aviso de "ligou" (na tomada)
@@ -154,8 +157,14 @@ checar(tela is not None, 'classes2.dex tem a TelaCheia')
 if tela is not None:
     checar(tela.get_superclassname() == 'Lorg/godotengine/godot/FullScreenGodotApp;', 'TelaCheia estende FullScreenGodotApp')
     metodos = {mt.get_name() for mt in tela.get_methods()}
-    for nome in ('onCreate', 'onResume', 'onWindowFocusChanged', 'onActivityResult'):
+    for nome in ('onCreate', 'onResume', 'onWindowFocusChanged'):
         checar(nome in metodos, '   TelaCheia.%s' % nome)
+# o jogo NUNCA abre janela sozinho (na máquina só há os botões da Zero
+# Delay): nada de pedir a tela inicial, o "Sobrepor" ou os ajustes dela
+dex2 = a.get_file('classes2.dex')
+for k in ('android.settings.action.MANAGE_OVERLAY_PERMISSION', 'android.settings.HOME_SETTINGS',
+          'android.app.role.HOME', 'Landroid/app/role/RoleManager;', 'android.settings.APPLICATION_DETAILS_SETTINGS'):
+    checar(k.encode() not in dex2, 'classes2.dex não abre sozinho: %s' % k.split('.')[-1].strip(';'))
 for nome in ('DragonInicioAtivo', 'DragonLigou', 'InicioDaTv'):
     checar('Lcom/lazersport/dragonbowling/%s;' % nome in classes2, 'classes2.dex tem a ' + nome)
 checar(not any(k.startswith('Landroidx/') for k in classes2), 'classes2.dex sem androidx (o esqueleto não vazou)')

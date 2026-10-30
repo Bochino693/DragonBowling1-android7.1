@@ -102,10 +102,7 @@ func _abre_ao_ligar(fonte: Font) -> void:
 		texto = "ABRE SOZINHO AO LIGAR: SIM (TELA INICIAL)"
 	elif sobrepor == "sim" or sobrepor == "nao_precisa":
 		texto = "ABRE SOZINHO AO LIGAR: SIM (AVISO DE LIGAR)"
-		if sobrepor == "nao_precisa":
-			dica = "MAIS GARANTIDO: HOME > DRAGON BOWLING > SEMPRE  ·  " + android
-		else:
-			dica = "MAIS GARANTIDO: PREPARAR_TV.bat NO PC (TELA INICIAL)  ·  " + android
+		dica = "MAIS GARANTIDO: PREPARAR_TV.bat NO PC (TELA INICIAL)  ·  " + android
 	else:
 		texto = "ABRE SOZINHO AO LIGAR: NÃO  ·  " + android
 		dica = "PERMITA \"SOBREPOR A OUTROS APPS\" OU RODE O PREPARAR_TV.bat NO PC"

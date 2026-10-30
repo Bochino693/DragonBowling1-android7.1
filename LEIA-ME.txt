@@ -1,4 +1,4 @@
-DRAGON BOWLING - TV BOX MALI-450 (ANDROID 7.1) - BUILD 13
+DRAGON BOWLING - TV BOX MALI-450 (ANDROID 7.1) - BUILD 14
 =========================================================
 
 PARA QUAL MAQUINA E ESTA VERSAO
@@ -43,7 +43,7 @@ O pacote continua com.lazersport.dragonbowling.s905l (nao briga com a
 versao da Pro Ultra). O Android nao pergunta nada na instalacao (a unica
 permissao, a de abrir ao ligar, ele da sozinho).
 
-ABRE SOZINHO AO LIGAR E NUNCA SAI DA TV (BUILDS 12 E 13)
+ABRE SOZINHO AO LIGAR E NUNCA SAI DA TV (BUILDS 12 A 14)
 --------------------------------------------------------
 O mesmo metodo do Strike Kids, para TV Box (Android 7.1) e placa da TV
 (Android TV 10 a 14). O jogo abre sozinho ao ligar de tres jeitos:
@@ -73,11 +73,20 @@ COMO DEIXAR PRONTO - O JEITO GARANTIDO (PC, uma vez por TV):
      sobra o jogo; para religar: adb shell pm enable <o pacote mostrado>).
   Gerando o APK no mesmo PC: GERAR_APK_AGORA.bat -Instalar -Ip <IP> faz
   tudo isso depois de gerar.
-SEM PC (pendrive): instale, abra o jogo uma vez pela lista de apps e
-deixe-o parado uns 20 s: ele mesmo pede a escolha (Dragon Bowling e
-SEMPRE; no Android 10+, "definir como app de inicio") ou, se a TV nao
-deixar trocar a tela inicial, abre "Sobrepor a outros apps": LIGUE para o
-Dragon Bowling.
+O JOGO NUNCA ABRE JANELA NENHUMA SOZINHO (build 14): na maquina so ha os
+botoes da Zero Delay e ninguem conseguiria fechar uma janela do Android.
+Por isso a tela inicial e feita so pelo PC (PREPARAR_TV.bat, acima); sem
+PC, o tecnico liga o "Sobrepor" uma vez com o controle remoto:
+SEM PC (pendrive): instale e abra o jogo uma vez pela lista de apps. Depois,
+com o controle remoto:
+  - TV com Android TV (10 a 14): Configuracoes > Apps (ou Privacidade) >
+    Acesso especial a apps > Sobrepor a outros apps > Dragon Bowling:
+    PERMITIDO.
+  - TV Box (Android 7.1): nada a fazer - o aviso de "ligou" abre o jogo.
+A tela inicial do jogo vem DESLIGADA no APK (assim o Android nunca mostra
+a janela "qual tela inicial usar"): so o PREPARAR_TV.bat a liga, ja
+escolhida. O jogo nao pede permissao nenhuma (a Zero Delay e um controle
+comum).
 CONFERIR: na abertura ou no menu, SELECT (configuracao). A linha "ABRE
 SOZINHO AO LIGAR" diz SIM (TELA INICIAL), SIM (AVISO DE LIGAR) ou NAO e o
 que fazer. Depois tire a TV da tomada, espere 10 s e ligue.

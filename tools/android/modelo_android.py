@@ -8,9 +8,10 @@ Dragon Bowling da TV Box - o mesmo que a Build 10 montava com o Gradle:
   - o jogo na lista de apps da TV (LEANBACK_LAUNCHER), sem exigir tela de
     toque nem o modo leanback;
   - O JOGO ABRE SOZINHO AO LIGAR, com o mesmo método do Strike Kids
-    (InicioDaTv): a tela inicial invisível (DragonInicioAtivo, HOME), o
-    aviso de "ligou" (DragonLigou, BOOT_COMPLETED e QUICKBOOT_POWERON) e o
-    <queries> das telas iniciais (Android 11+).
+    (InicioDaTv): a tela inicial invisível (DragonInicioAtivo, HOME - vem
+    desligada: só o PREPARAR_TV.bat a liga e escolhe, sem janela), o aviso
+    de "ligou" (DragonLigou, BOOT_COMPLETED e QUICKBOOT_POWERON) e o
+    <queries> das telas iniciais (Android 11+). NENHUMA janela aparece.
 
   - o jogo SÓ na memória interna (installLocation internalOnly): nunca vai
     para um pendrive ou cartão, de onde sumiria.
@@ -18,8 +19,8 @@ Dragon Bowling da TV Box - o mesmo que a Build 10 montava com o Gradle:
 Sem plugin. Duas permissões, que o Android não pergunta na instalação: a
 RECEIVE_BOOT_COMPLETED (dada sozinha) e a SYSTEM_ALERT_WINDOW ("Sobrepor a
 outros apps": no Android 10+ é o que deixa o aviso de "ligou" abrir o
-jogo; o jogo pede, ou o PREPARAR_TV.bat permite pelo adb). O jogo usa só a
-placa Zero Delay.
+jogo; o PREPARAR_TV.bat permite pelo adb - o jogo nunca abre janela
+nenhuma). O jogo usa só a placa Zero Delay.
 
     python3 -I tools/android/modelo_android.py <android_release.apk oficial> <apktool.jar>
 
@@ -82,8 +83,12 @@ def injetar(manifesto):
     s = trocar_uma(s, a, a + '''
                 <category android:name="android.intent.category.LEANBACK_LAUNCHER"/>''', "categoria LAUNCHER")
     # O JOGO ABRE SOZINHO AO LIGAR (o método do Strike Kids): a tela inicial
-    # invisível que traz o jogo e o aviso de "ligou"
-    s = trocar_uma(s, "    </application>", '''        <activity android:excludeFromRecents="true" android:exported="true" android:name="%s" android:noHistory="true" android:stateNotNeeded="true" android:theme="@android:style/Theme.Translucent.NoTitleBar">
+    # invisível que traz o jogo e o aviso de "ligou". A tela inicial vem
+    # DESLIGADA (enabled="false"): com duas telas iniciais e nenhuma
+    # escolhida, o Android mostraria ao ligar a janela "qual tela inicial
+    # usar" - e na máquina ninguém consegue escolher. O PREPARAR_TV.bat a
+    # liga (pm enable) e já a deixa escolhida, sem nada aparecer na TV.
+    s = trocar_uma(s, "    </application>", '''        <activity android:enabled="false" android:excludeFromRecents="true" android:exported="true" android:name="%s" android:noHistory="true" android:stateNotNeeded="true" android:theme="@android:style/Theme.Translucent.NoTitleBar">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.HOME"/>
