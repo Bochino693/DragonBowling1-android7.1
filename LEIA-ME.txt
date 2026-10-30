@@ -1,4 +1,4 @@
-DRAGON BOWLING - TV BOX MALI-450 (ANDROID 7.1) - BUILD 11
+DRAGON BOWLING - TV BOX MALI-450 (ANDROID 7.1) - BUILD 12
 =========================================================
 
 PARA QUAL MAQUINA E ESTA VERSAO
@@ -40,7 +40,30 @@ APK novo (gerado em qualquer PC ou o pronto) instala POR CIMA, sem
 desinstalar e sem perder nada.
 
 O pacote continua com.lazersport.dragonbowling.s905l (nao briga com a
-versao da Pro Ultra). Sem nenhuma permissao: o Android nao pergunta nada.
+versao da Pro Ultra). O Android nao pergunta nada na instalacao (a unica
+permissao, a de abrir ao ligar, ele da sozinho).
+
+ABRE SOZINHO AO LIGAR (BUILD 12 - O MESMO METODO DO STRIKE KIDS)
+---------------------------------------------------------------
+O jogo abre sozinho ao ligar a TV Box ou a placa da TV, de qualquer jeito:
+1. TELA INICIAL: o Dragon Bowling e uma tela inicial do Android. Enquanto
+   ele ainda nao e a tela inicial, uns 20 s depois de abrir (sem ninguem
+   apertar nada) o proprio jogo pede: escolha Dragon Bowling e SEMPRE
+   (no Android 10+ aparece "definir como app de inicio": aceite). Feito
+   uma vez, o Android abre o jogo ao ligar na tomada, ao voltar do modo de
+   espera e a cada HOME; e se o jogo fechar ou cair, abre de novo.
+2. AVISO DE "LIGOU": ligada na tomada, a placa avisa os apps
+   (BOOT_COMPLETED / QUICKBOOT_POWERON) e o jogo se abre - mesmo que
+   ainda nao seja a tela inicial. Depois de instalar, abra o jogo uma vez
+   pela lista de apps (o Android so avisa um app que ja foi aberto).
+3. VOLTA DA ESPERA: desligada pelo CONTROLE, a TV fica so em espera; ao
+   religar (10 s ou mais apagada) o jogo reinicia do zero e vem para a
+   frente, sem imagem travada.
+SAIR PARA A TELA DA TV (operador): HOME 5 vezes seguidas abre a tela
+inicial da propria TV; um HOME de novo volta ao jogo.
+Quem ja tinha escolhido o Dragon Bowling como tela inicial (ate a build
+11): na 1a vez com a build 12 o Android pergunta de novo - escolha Dragon
+Bowling e SEMPRE.
 
 O QUE A BUILD 11 TRAZ (MALI-450: LISO, SEM ENGASGO, SEM QUEBRAR)
 ----------------------------------------------------------------
@@ -82,7 +105,8 @@ O QUE A BUILD 11 TRAZ (MALI-450: LISO, SEM ENGASGO, SEM QUEBRAR)
    atividade de TELA CHEIA (tools\android\TelaCheia: sem barra do sistema,
    sem margem, tambem na area de overscan da TV, tela sempre acesa), o
    jogo na tela inicial da TV (Leanback) e como aplicativo de inicio da
-   maquina (HOME), como na build 10. O gerador exporta uma COPIA com SO os
+   maquina (HOME), como na build 10 (na build 12, o metodo do Strike Kids:
+   ver ABRE SOZINHO AO LIGAR). O gerador exporta uma COPIA com SO os
    arquivos do jogo desta versao (tools\android\arquivos_do_jogo.txt):
    arquivo que sobrou de uma versao antiga na pasta nao entra no APK e
    nada e apagado; se faltar um arquivo da lista (zip extraido pela
@@ -121,6 +145,11 @@ botao cair na funcao errada: abra com o SELECT e aperte na ordem pedida
 (STR, Quadrado, X, Bolinha, Triangulo, R1; SELECT e R2 sao opcionais). Fica
 gravado na TV Box. Na partida o SELECT nao faz nada. Nenhuma tecla fecha o
 jogo. Diagrama da placa: docs\ZERO_DELAY_BOLICHE.png.
+CREDITO (MOEDEIRO): na porta STR, junto com o 0 V da fonte dele no GND da
+placa. Cada moeda e um START: 1 moeda = 1 jogador, 2 moedas em ate 9 s =
+2 jogadores. Moedeiro em 1 pulso por moeda, saida NO. NUNCA no SELECT (ele
+abre a configuracao). Montagem dos sensores, do moedeiro e do START, fio
+por fio: docs\ZERO_DELAY_MONTAGEM.png.
 
 BORDA PRETA EM VOLTA DA IMAGEM
 ------------------------------

@@ -997,22 +997,30 @@ function Conferir-Apk([string]$Apk) {
         # a tela cheia (a atividade do Dragon Bowling) e nenhum plugin antigo
         $dex2 = Texto-Binario (Bytes-Do-Zip $z "classes2.dex")
         if (-not $dex2.Contains("Lcom/lazersport/dragonbowling/TelaCheia;")) { throw "o APK ficou sem a atividade de tela cheia (classes2.dex)." }
+        # o jogo abre sozinho ao ligar (o metodo do Strike Kids)
+        foreach ($k in @("DragonInicioAtivo", "DragonLigou", "InicioDaTv")) {
+            if (-not $dex2.Contains("Lcom/lazersport/dragonbowling/$k;")) { throw "o APK ficou sem a $k (abrir ao ligar, classes2.dex)." }
+        }
         foreach ($d in @($nomes.Keys | Where-Object { $_ -match '^classes\d*\.dex$' })) {
             if ((Texto-Binario (Bytes-Do-Zip $z $d)).Contains("Lcom/lazersport/dragon/usbserial/")) { throw "o APK saiu com o plugin USB antigo ($d)." }
         }
-        # NENHUMA permissao: o jogo usa so a placa Zero Delay (o Android nao pergunta nada)
+        # SO a permissao do aviso de "ligou" (RECEIVE_BOOT_COMPLETED: o Android
+        # da na instalacao, sem perguntar nada); o jogo usa so a placa Zero Delay
         $manifesto = Texto-Binario (Bytes-Do-Zip $z "AndroidManifest.xml")
         if (-not $manifesto.Contains("com.lazersport.dragonbowling.TelaCheia")) { throw "o manifesto do APK nao abre a tela cheia (modelo errado?)." }
         # (o android.permission.DUMP do modelo oficial nao e pedido ao Android:
         # e quem pode chamar um receptor interno do androidx)
-        $pedidas = @([Regex]::Matches($manifesto, 'android\.permission\.[A-Z_]+') | ForEach-Object { $_.Value } | Where-Object { $_ -ne "android.permission.DUMP" } | Select-Object -Unique)
+        $permitidas = @("android.permission.DUMP", "android.permission.RECEIVE_BOOT_COMPLETED")
+        $pedidas = @([Regex]::Matches($manifesto, 'android\.permission\.[A-Z_]+') | ForEach-Object { $_.Value } | Where-Object { $permitidas -notcontains $_ } | Select-Object -Unique)
         if ($pedidas.Count -gt 0) { throw "o APK pede permissao ($($pedidas -join ', ')): o Android faria perguntas." }
         if ($manifesto.Contains("android.hardware.usb.action.USB_DEVICE_ATTACHED")) { throw "o APK abre com o USB (plugin antigo?): o Android faria perguntas." }
-        foreach ($c in @("android.intent.category.LEANBACK_LAUNCHER", "android.intent.category.HOME")) {
+        foreach ($c in @("android.intent.category.LEANBACK_LAUNCHER", "android.intent.category.HOME", "android.permission.RECEIVE_BOOT_COMPLETED",
+                "android.intent.action.BOOT_COMPLETED", "android.intent.action.QUICKBOOT_POWERON",
+                "com.lazersport.dragonbowling.DragonInicioAtivo", "com.lazersport.dragonbowling.DragonLigou")) {
             if (-not $manifesto.Contains($c)) { throw "o manifesto do APK ficou sem $c." }
         }
     } finally { $z.Dispose() }
-    Ok ("conteudo conferido ({0} arquivos do jogo, 32 e 64 bits, tela cheia, sem permissoes)" -f $dados)
+    Ok ("conteudo conferido ({0} arquivos do jogo, 32 e 64 bits, tela cheia, abre sozinho ao ligar)" -f $dados)
     $cod = Executar $script:Java @("-jar", $script:Assinador, "-a", $Apk, "--onlyVerify") -Log (Join-Path $script:Logs "verificar.log") -LimiteMin 5 -Rotulo "assinador" -Quieto
     $texto = Ler-Log (Join-Path $script:Logs "verificar.log")
     if ($cod -ne 0 -or $texto -notmatch 'signature verified' -or $texto -notmatch ' 0 errors') { throw "a assinatura do APK nao conferiu (veja verificar.log)." }
@@ -1100,7 +1108,9 @@ function Principal {
     Write-Host ("  Tamanho: {0:N1} MB   (levou {1} min)" -f ($tamanho / 1MB), $minutos)
     Write-Host "  Versao:  $($script:NomeVersao)   pacote: $Pacote"
     Write-Host "  SHA256:  $hash"
-    Write-Host "  So a placa Zero Delay: nenhuma permissao, o Android nao pergunta nada." -ForegroundColor Green
+    Write-Host "  So a placa Zero Delay: o Android nao pergunta nada na instalacao." -ForegroundColor Green
+    Write-Host "  ABRE SOZINHO AO LIGAR: na 1a vez o jogo pede para ser a tela inicial;" -ForegroundColor Green
+    Write-Host "  escolha Dragon Bowling e SEMPRE (como no Strike Kids)." -ForegroundColor Green
     Write-Host "  1a VEZ COM ESTA CHAVE: desinstale da TV Box o Dragon Bowling antigo" -ForegroundColor Yellow
     Write-Host "  (Build 10 ou anterior, assinado com outra chave) e instale este." -ForegroundColor Yellow
     Write-Host "  Depois disso, os proximos instalam POR CIMA, sem desinstalar."
