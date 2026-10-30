@@ -7,7 +7,8 @@ rem SEM GRADLE: mostra cada passo nesta janela e guarda o historico em
 rem build\android\GERACAO-COMPLETA.log. Opcoes (opcionais):
 rem   GERAR_APK_AGORA.bat -Giro -1         (topo do jogo na direita do HDMI)
 rem   GERAR_APK_AGORA.bat -Giro 0          (TV deitada, sem giro)
-rem   GERAR_APK_AGORA.bat -Instalar        (instala na TV Box pelo adb)
+rem   GERAR_APK_AGORA.bat -Instalar        (instala na TV pelo adb e poe o jogo
+rem        para abrir sozinho ao ligar: o mesmo do PREPARAR_TV.bat; -Ip IP)
 rem   GERAR_APK_AGORA.bat -Versao 1.0.12-mali450
 if exist "%~dp0project.godot" if exist "%~dp0tools\android\GERAR_APK.ps1" goto projeto_ok
 echo.

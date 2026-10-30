@@ -12,8 +12,14 @@ Dragon Bowling da TV Box - o mesmo que a Build 10 montava com o Gradle:
     aviso de "ligou" (DragonLigou, BOOT_COMPLETED e QUICKBOOT_POWERON) e o
     <queries> das telas iniciais (Android 11+).
 
-Sem plugin. Uma permissão só, a RECEIVE_BOOT_COMPLETED (o Android dá na
-instalação, sem perguntar nada): o jogo usa só a placa Zero Delay.
+  - o jogo SÓ na memória interna (installLocation internalOnly): nunca vai
+    para um pendrive ou cartão, de onde sumiria.
+
+Sem plugin. Duas permissões, que o Android não pergunta na instalação: a
+RECEIVE_BOOT_COMPLETED (dada sozinha) e a SYSTEM_ALERT_WINDOW ("Sobrepor a
+outros apps": no Android 10+ é o que deixa o aviso de "ligou" abrir o
+jogo; o jogo pede, ou o PREPARAR_TV.bat permite pelo adb). O jogo usa só a
+placa Zero Delay.
 
     python3 -I tools/android/modelo_android.py <android_release.apk oficial> <apktool.jar>
 
@@ -38,6 +44,8 @@ ATIVIDADE = "com.lazersport.dragonbowling.TelaCheia"
 INICIO = "com.lazersport.dragonbowling.DragonInicioAtivo"
 LIGOU = "com.lazersport.dragonbowling.DragonLigou"
 PERMISSAO_LIGOU = "android.permission.RECEIVE_BOOT_COMPLETED"
+# Android 10+: o aviso de "ligou" só abre o jogo com "Sobrepor a outros apps"
+PERMISSAO_SOBREPOR = "android.permission.SYSTEM_ALERT_WINDOW"
 
 
 def trocar_uma(texto, velho, novo, nome):
@@ -59,12 +67,16 @@ def injetar(manifesto):
     <uses-feature android:name="android.hardware.touchscreen" android:required="false"/>
     <uses-feature android:name="android.software.leanback" android:required="false"/>
     <uses-permission android:name="%s"/>
+    <uses-permission android:name="%s"/>
     <queries>
         <intent>
             <action android:name="android.intent.action.MAIN"/>
             <category android:name="android.intent.category.HOME"/>
         </intent>
-    </queries>''' % PERMISSAO_LIGOU, "glEsVersion")
+    </queries>''' % (PERMISSAO_LIGOU, PERMISSAO_SOBREPOR), "glEsVersion")
+    # o jogo SÓ na memória interna: nunca vai para um pendrive ou cartão
+    # (formatado como memória da TV) - tirado o pendrive, o jogo sumiria
+    s = trocar_uma(s, 'android:installLocation="auto"', 'android:installLocation="internalOnly"', "installLocation")
     # o jogo na lista de apps da TV
     a = '<category android:name="android.intent.category.LAUNCHER"/>'
     s = trocar_uma(s, a, a + '''

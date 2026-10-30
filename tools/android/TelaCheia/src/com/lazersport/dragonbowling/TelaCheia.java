@@ -11,7 +11,6 @@ import android.os.Looper;
 import android.os.SystemClock;
 import android.util.Log;
 import android.view.KeyEvent;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowInsets;
@@ -115,10 +114,24 @@ public class TelaCheia extends FullScreenGodotApp {
 		InicioDaTv.ouvirTela(this);
 	}
 
+	/** O estado do "abrir ao ligar" para a tela de configuração (SELECT) do jogo. */
+	private final Runnable gravarEstado = new Runnable() {
+		@Override
+		public void run() {
+			try {
+				InicioDaTv.gravarEstado(TelaCheia.this);
+			} catch (Throwable t) {
+				Log.i("DragonBowling", "inicio: estado: " + t);
+			}
+		}
+	};
+
 	@Override
 	protected void onResume() {
 		super.onResume();
 		telaCheia();
+		// (de volta dos ajustes do Android: a configuração já mostra o novo estado)
+		relogio.post(gravarEstado);
 		relogio.removeCallbacks(pedirTelaInicial);
 		if (!telaInicialPedida) {
 			relogio.postDelayed(pedirTelaInicial, OLHAR_DE_NOVO_MS);
@@ -131,17 +144,15 @@ public class TelaCheia extends FullScreenGodotApp {
 		super.onPause();
 	}
 
-	/** Botão ou sensor da placa (ou o controle remoto): alguém está jogando. */
+	/**
+	 * Botão ou sensor da placa (ou o controle remoto): alguém está jogando.
+	 * (Só teclas e botões: um eixo de joystick que treme não pode impedir o
+	 * pedido para sempre - e o jogo não usa o direcional.)
+	 */
 	@Override
 	public boolean dispatchKeyEvent(KeyEvent evento) {
 		ultimoToque = SystemClock.elapsedRealtime();
 		return super.dispatchKeyEvent(evento);
-	}
-
-	@Override
-	public boolean dispatchGenericMotionEvent(MotionEvent evento) {
-		ultimoToque = SystemClock.elapsedRealtime();
-		return super.dispatchGenericMotionEvent(evento);
 	}
 
 	@Override

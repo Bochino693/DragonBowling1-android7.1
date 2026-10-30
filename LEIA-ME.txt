@@ -1,4 +1,4 @@
-DRAGON BOWLING - TV BOX MALI-450 (ANDROID 7.1) - BUILD 12
+DRAGON BOWLING - TV BOX MALI-450 (ANDROID 7.1) - BUILD 13
 =========================================================
 
 PARA QUAL MAQUINA E ESTA VERSAO
@@ -43,27 +43,54 @@ O pacote continua com.lazersport.dragonbowling.s905l (nao briga com a
 versao da Pro Ultra). O Android nao pergunta nada na instalacao (a unica
 permissao, a de abrir ao ligar, ele da sozinho).
 
-ABRE SOZINHO AO LIGAR (BUILD 12 - O MESMO METODO DO STRIKE KIDS)
----------------------------------------------------------------
-O jogo abre sozinho ao ligar a TV Box ou a placa da TV, de qualquer jeito:
-1. TELA INICIAL: o Dragon Bowling e uma tela inicial do Android. Enquanto
-   ele ainda nao e a tela inicial, uns 20 s depois de abrir (sem ninguem
-   apertar nada) o proprio jogo pede: escolha Dragon Bowling e SEMPRE
-   (no Android 10+ aparece "definir como app de inicio": aceite). Feito
+ABRE SOZINHO AO LIGAR E NUNCA SAI DA TV (BUILDS 12 E 13)
+--------------------------------------------------------
+O mesmo metodo do Strike Kids, para TV Box (Android 7.1) e placa da TV
+(Android TV 10 a 14). O jogo abre sozinho ao ligar de tres jeitos:
+1. TELA INICIAL: o Dragon Bowling e uma tela inicial do Android. Feito
    uma vez, o Android abre o jogo ao ligar na tomada, ao voltar do modo de
    espera e a cada HOME; e se o jogo fechar ou cair, abre de novo.
 2. AVISO DE "LIGOU": ligada na tomada, a placa avisa os apps
-   (BOOT_COMPLETED / QUICKBOOT_POWERON) e o jogo se abre - mesmo que
-   ainda nao seja a tela inicial. Depois de instalar, abra o jogo uma vez
-   pela lista de apps (o Android so avisa um app que ja foi aberto).
+   (BOOT_COMPLETED / QUICKBOOT_POWERON) e o jogo se abre. No Android 10
+   ou mais novo (as TVs com Android TV) isso so funciona com "Sobrepor a
+   outros apps" permitido para o jogo.
 3. VOLTA DA ESPERA: desligada pelo CONTROLE, a TV fica so em espera; ao
    religar (10 s ou mais apagada) o jogo reinicia do zero e vem para a
-   frente, sem imagem travada.
+   frente.
+COMO DEIXAR PRONTO - O JEITO GARANTIDO (PC, uma vez por TV):
+  a. Na TV: Configuracoes > Sistema > Sobre > clique 7 vezes em "Build do
+     SO do Android TV" (ou "Numero da versao") ate aparecer "voce e um
+     desenvolvedor". Volte: Opcoes do desenvolvedor > Depuracao USB
+     LIGADA (e "Depuracao por rede"/"ADB pela rede", se houver).
+  b. Anote o IP da TV: Configuracoes > Rede e Internet > (a rede).
+  c. No PC (mesma rede da TV), com o APK em APK-Pronto: dois cliques em
+     PREPARAR_TV.bat e digite o IP. Na TV, aceite "Permitir depuracao"
+     (marque "Sempre permitir deste computador").
+  d. Ele instala o jogo, poe como TELA INICIAL, permite "Sobrepor a
+     outros apps", confere e diz TV PRONTA (ou o que faltou).
+  e. Se mesmo assim a TV abrir a propria tela ao ligar:
+     PREPARAR_TV.bat -Ip <IP> -SoOJogo (desliga a tela inicial da TV: so
+     sobra o jogo; para religar: adb shell pm enable <o pacote mostrado>).
+  Gerando o APK no mesmo PC: GERAR_APK_AGORA.bat -Instalar -Ip <IP> faz
+  tudo isso depois de gerar.
+SEM PC (pendrive): instale, abra o jogo uma vez pela lista de apps e
+deixe-o parado uns 20 s: ele mesmo pede a escolha (Dragon Bowling e
+SEMPRE; no Android 10+, "definir como app de inicio") ou, se a TV nao
+deixar trocar a tela inicial, abre "Sobrepor a outros apps": LIGUE para o
+Dragon Bowling.
+CONFERIR: na abertura ou no menu, SELECT (configuracao). A linha "ABRE
+SOZINHO AO LIGAR" diz SIM (TELA INICIAL), SIM (AVISO DE LIGAR) ou NAO e o
+que fazer. Depois tire a TV da tomada, espere 10 s e ligue.
 SAIR PARA A TELA DA TV (operador): HOME 5 vezes seguidas abre a tela
 inicial da propria TV; um HOME de novo volta ao jogo.
+O JOGO NAO SOME: a build 13 so instala na MEMORIA INTERNA da TV (nunca num
+pendrive ou cartao formatado como memoria da TV, de onde sumiria ao tirar
+o pendrive) e o Android nao deixa move-lo. Atualizar e sempre POR CIMA
+(mesma chave): nao desinstale para atualizar. Se o Google Play Protect
+perguntar sobre o jogo, escolha manter/instalar mesmo assim.
 Quem ja tinha escolhido o Dragon Bowling como tela inicial (ate a build
-11): na 1a vez com a build 12 o Android pergunta de novo - escolha Dragon
-Bowling e SEMPRE.
+11): na 1a vez com a build 12 ou 13 o Android pergunta de novo - escolha
+Dragon Bowling e SEMPRE (ou rode o PREPARAR_TV.bat).
 
 O QUE A BUILD 11 TRAZ (MALI-450: LISO, SEM ENGASGO, SEM QUEBRAR)
 ----------------------------------------------------------------
