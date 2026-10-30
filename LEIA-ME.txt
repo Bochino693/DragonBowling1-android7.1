@@ -145,6 +145,11 @@ botao cair na funcao errada: abra com o SELECT e aperte na ordem pedida
 (STR, Quadrado, X, Bolinha, Triangulo, R1; SELECT e R2 sao opcionais). Fica
 gravado na TV Box. Na partida o SELECT nao faz nada. Nenhuma tecla fecha o
 jogo. Diagrama da placa: docs\ZERO_DELAY_BOLICHE.png.
+CREDITO (MOEDEIRO): na porta STR, junto com o 0 V da fonte dele no GND da
+placa. Cada moeda e um START: 1 moeda = 1 jogador, 2 moedas em ate 9 s =
+2 jogadores. Moedeiro em 1 pulso por moeda, saida NO. NUNCA no SELECT (ele
+abre a configuracao). Montagem dos sensores, do moedeiro e do START, fio
+por fio: docs\ZERO_DELAY_MONTAGEM.png.
 
 BORDA PRETA EM VOLTA DA IMAGEM
 ------------------------------
