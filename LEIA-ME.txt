@@ -1,4 +1,4 @@
-DRAGON BOWLING - TV BOX MALI-450 (ANDROID 7.1) - BUILD 16
+DRAGON BOWLING - TV BOX MALI-450 (ANDROID 7.1) - BUILD 17
 =========================================================
 
 PARA QUAL MAQUINA E ESTA VERSAO
@@ -60,24 +60,56 @@ NUNCA PARADA (BUILD 16)
    esta inteiro; o anterior fica de reserva (.bak). Um corte de energia no
    meio da gravacao nao perde o mapeamento dos botoes.
 
-ABRE SOZINHO AO LIGAR (BUILD 15 - IGUAL AO STRIKE KIDS)
-------------------------------------------------------
-O mesmo metodo do Strike Kids, que ja abre sozinho na placa da TV: o
-mesmo codigo (InicioDaTv), so com os nomes do Dragon Bowling.
+INSTALAR NA TV GOOGLE (BLOQUEIO DO GOOGLE / PLAY PROTECT)
+--------------------------------------------------------
+Desde 30/09/2026, no Brasil, a TV Google so instala por fora da loja um APK
+de "desenvolvedor verificado"; os outros o Play Protect barra. Saidas:
+  a. PELO ADB (sem espera; a verificacao nao vale para o adb): o
+     PREPARAR_TV.bat (PC na mesma rede da TV) instala e ja deixa a TV
+     pronta. Sem PC: um app de adb no celular Android instala o APK e
+     PREPARAR_TV_SEM_PC.txt faz o resto.
+  b. "FLUXO AVANCADO" DO ANDROID (sem PC, uma vez por TV): Opcoes do
+     desenvolvedor (passo 1 abaixo) > ligue a opcao de permitir apps de
+     desenvolvedores nao verificados (o nome muda de TV para TV),
+     reinicie a TV e espere 24 h; depois instale pelo gerenciador de
+     arquivos normalmente.
+  c. So o aviso do Play Protect (sem falar de desenvolvedor): Play Store >
+     icone do perfil > Play Protect > engrenagem > desligue "Verificar apps
+     com o Play Protect" (ou Configuracoes > Privacidade > Seguranca e
+     restricoes > Verificar apps).
+  d. DE VEZ, EM TODAS AS TVS: registrar o jogo como desenvolvedor
+     verificado no Android Developer Console (conta Google da empresa):
+     pacote com.lazersport.dragonbowling.s905l e certificado SHA-256
+     56:00:C8:89:2A:1D:95:C6:4C:72:0F:CE:D3:EE:E0:D0:3C:32:3F:4C:5D:84:77:E2:C2:F2:F6:32:F6:C7:13:83
+     ATENCAO: a chave de assinatura (tools\android\dragonbowling.keystore)
+     e a senha dela estao neste repositorio publico; antes de registrar,
+     tire-as do repositorio (quem tiver a chave assina APKs em seu nome).
+
+ABRE SOZINHO AO LIGAR (BUILD 17 - O JOGO SE PREPARA SOZINHO)
+-----------------------------------------------------------
 COMO DEIXAR PRONTO (uma vez por TV, com o controle remoto):
-  1. Instale o APK (por cima do antigo: as configuracoes ficam) e abra o
-     jogo uma vez pela lista de apps.
-  2. Deixe o jogo parado uns 20 s: ele mesmo pede ao Android para ser a
-     tela inicial. Pode aparecer:
-       - "Definir Dragon Bowling como app de tela inicial?": ACEITE;
-       - a janela "Sempre / So uma vez": DRAGON BOWLING e SEMPRE;
-       - os ajustes "Tela inicial"/"App de inicio": escolha DRAGON
-         BOWLING e volte.
-     Nao apareceu nada? Aperte HOME no controle: DRAGON BOWLING e SEMPRE.
-  3. Confira: SELECT (configuracao) mostra "ABRE SOZINHO AO LIGAR: SIM
-     (TELA INICIAL)". Tire a TV da tomada, espere 10 s e ligue.
-  Escolhido uma vez, o jogo NUNCA MAIS pergunta: o cliente nunca ve janela.
-  O jogo nunca abre a tela "Sobrepor a outros apps".
+  1. Opcoes do desenvolvedor: Configuracoes > Sistema > Sobre > clique 7
+     vezes em "Build do SO do Android TV". Depois: Configuracoes > Sistema
+     > Opcoes do desenvolvedor > Depuracao USB LIGADA.
+  2. Instale o APK (por cima do antigo: as configuracoes ficam) e abra o
+     jogo pela lista de apps.
+  3. Deixe o jogo parado uns 20 s: ELE SE PREPARA SOZINHO. A TV pergunta
+     "Permitir depuracao USB?": marque "Sempre permitir deste
+     computador" e OK. O jogo vira a UNICA tela inicial (a do Google TV
+     sai, so depois de conferir a do jogo), a TV fica sempre ligada (sem
+     descanso de tela e sem desligar por inatividade) e o "Sobrepor"
+     fica permitido. E o mesmo do PREPARAR_TV.bat, feito pelo proprio
+     jogo, pelo adb da propria TV.
+     Sem a Depuracao USB, o jogo pede como o Strike Kids: "Definir Dragon
+     Bowling como app de tela inicial?" (ACEITE), ou "Sempre / So uma vez"
+     (DRAGON BOWLING e SEMPRE), ou os ajustes "Tela inicial" (escolha
+     DRAGON BOWLING). Nao apareceu nada? HOME > DRAGON BOWLING > SEMPRE.
+  4. Confira: SELECT (configuracao) mostra "ABRE SOZINHO AO LIGAR: SIM
+     (TELA INICIAL)" - ou o que falta. Tire a TV da tomada, espere 10 s e
+     ligue: abre so o jogo.
+  Feito uma vez, NUNCA MAIS pergunta: o cliente nunca ve janela. O jogo
+  nunca abre a tela "Sobrepor a outros apps". A Depuracao USB pode
+  continuar ligada (o PREPARAR_TV.bat -DevolverTv precisa dela).
 O jogo abre sozinho de tres jeitos:
 1. TELA INICIAL: escolhido, o Android abre o jogo ao ligar na tomada, ao
    voltar do modo de espera e a cada HOME; se o jogo fechar ou cair, abre

@@ -1011,7 +1011,7 @@ function Conferir-Apk([string]$Apk) {
         $dex2 = Texto-Binario (Bytes-Do-Zip $z "classes2.dex")
         if (-not $dex2.Contains("Lcom/lazersport/dragonbowling/TelaCheia;")) { throw "o APK ficou sem a atividade de tela cheia (classes2.dex)." }
         # o jogo abre sozinho ao ligar (o metodo do Strike Kids)
-        foreach ($k in @("DragonInicioAtivo", "DragonLigou", "InicioDaTv", "Vigia")) {
+        foreach ($k in @("DragonInicioAtivo", "DragonLigou", "InicioDaTv", "Vigia", "AdbDaTv")) {
             if (-not $dex2.Contains("Lcom/lazersport/dragonbowling/$k;")) { throw "o APK ficou sem a $k (abrir ao ligar, classes2.dex)." }
         }
         # o jogo pede a tela inicial como o Strike Kids, mas NUNCA a tela "Sobrepor a outros apps"
@@ -1028,7 +1028,7 @@ function Conferir-Apk([string]$Apk) {
         if (-not $manifesto.Contains("com.lazersport.dragonbowling.TelaCheia")) { throw "o manifesto do APK nao abre a tela cheia (modelo errado?)." }
         # (o android.permission.DUMP do modelo oficial nao e pedido ao Android:
         # e quem pode chamar um receptor interno do androidx)
-        $permitidas = @("android.permission.DUMP", "android.permission.RECEIVE_BOOT_COMPLETED", "android.permission.SYSTEM_ALERT_WINDOW")
+        $permitidas = @("android.permission.DUMP", "android.permission.RECEIVE_BOOT_COMPLETED", "android.permission.SYSTEM_ALERT_WINDOW", "android.permission.INTERNET")
         $pedidas = @([Regex]::Matches($manifesto, 'android\.permission\.[A-Z_]+') | ForEach-Object { $_.Value } | Where-Object { $permitidas -notcontains $_ } | Select-Object -Unique)
         if ($pedidas.Count -gt 0) { throw "o APK pede permissao ($($pedidas -join ', ')): o Android faria perguntas." }
         if ($manifesto.Contains("android.hardware.usb.action.USB_DEVICE_ATTACHED")) { throw "o APK abre com o USB (plugin antigo?): o Android faria perguntas." }
@@ -1141,8 +1141,8 @@ function Principal {
     Write-Host "  SHA256:  $hash"
     Write-Host "  So a placa Zero Delay: o Android nao pergunta nada na instalacao." -ForegroundColor Green
     Write-Host "  ABRE SOZINHO AO LIGAR: o jeito garantido e o PREPARAR_TV.bat (PC na rede da TV)." -ForegroundColor Green
-    Write-Host "  Sem PC (como o Strike Kids): abra o jogo e deixe parado; na 1a vez ele pede" -ForegroundColor Green
-    Write-Host "  para ser a tela inicial: escolha DRAGON BOWLING e SEMPRE. Nunca mais pergunta." -ForegroundColor Green
+    Write-Host "  Sem PC: ligue a Depuracao USB na TV, abra o jogo e deixe parado 20 s; ele se" -ForegroundColor Green
+    Write-Host "  prepara sozinho (aceite 'Permitir depuracao' / Sempre). Nunca mais pergunta." -ForegroundColor Green
     Write-Host "  So instala na memoria interna da TV (nunca no pendrive)." -ForegroundColor Green
     Write-Host "  1a VEZ COM ESTA CHAVE: desinstale da TV Box o Dragon Bowling antigo" -ForegroundColor Yellow
     Write-Host "  (Build 10 ou anterior, assinado com outra chave) e instale este." -ForegroundColor Yellow
