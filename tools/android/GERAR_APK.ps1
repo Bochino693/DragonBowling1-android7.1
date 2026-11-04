@@ -1011,7 +1011,7 @@ function Conferir-Apk([string]$Apk) {
         $dex2 = Texto-Binario (Bytes-Do-Zip $z "classes2.dex")
         if (-not $dex2.Contains("Lcom/lazersport/dragonbowling/TelaCheia;")) { throw "o APK ficou sem a atividade de tela cheia (classes2.dex)." }
         # o jogo abre sozinho ao ligar (o metodo do Strike Kids)
-        foreach ($k in @("DragonInicioAtivo", "DragonLigou", "InicioDaTv", "Vigia", "AdbDaTv")) {
+        foreach ($k in @("DragonInicioAtivo", "DragonLigou", "InicioDaTv", "Vigia", "AdbDaTv", "DragonSempre")) {
             if (-not $dex2.Contains("Lcom/lazersport/dragonbowling/$k;")) { throw "o APK ficou sem a $k (abrir ao ligar, classes2.dex)." }
         }
         # o jogo pede "Sobrepor a outros apps" como um auto start (Android 10+) e a tela inicial como o Strike Kids
@@ -1028,13 +1028,13 @@ function Conferir-Apk([string]$Apk) {
         if (-not $manifesto.Contains("com.lazersport.dragonbowling.TelaCheia")) { throw "o manifesto do APK nao abre a tela cheia (modelo errado?)." }
         # (o android.permission.DUMP do modelo oficial nao e pedido ao Android:
         # e quem pode chamar um receptor interno do androidx)
-        $permitidas = @("android.permission.DUMP", "android.permission.RECEIVE_BOOT_COMPLETED", "android.permission.SYSTEM_ALERT_WINDOW", "android.permission.INTERNET", "android.permission.WAKE_LOCK")
+        $permitidas = @("android.permission.DUMP", "android.permission.RECEIVE_BOOT_COMPLETED", "android.permission.SYSTEM_ALERT_WINDOW", "android.permission.INTERNET", "android.permission.WAKE_LOCK", "android.permission.FOREGROUND_SERVICE", "android.permission.FOREGROUND_SERVICE_SPECIAL_USE")
         $pedidas = @([Regex]::Matches($manifesto, 'android\.permission\.[A-Z_]+') | ForEach-Object { $_.Value } | Where-Object { $permitidas -notcontains $_ } | Select-Object -Unique)
         if ($pedidas.Count -gt 0) { throw "o APK pede permissao ($($pedidas -join ', ')): o Android faria perguntas." }
         if ($manifesto.Contains("android.hardware.usb.action.USB_DEVICE_ATTACHED")) { throw "o APK abre com o USB (plugin antigo?): o Android faria perguntas." }
         foreach ($c in @("android.intent.category.LEANBACK_LAUNCHER", "android.intent.category.HOME", "android.permission.RECEIVE_BOOT_COMPLETED",
                 "android.permission.SYSTEM_ALERT_WINDOW", "android.intent.action.BOOT_COMPLETED", "android.intent.action.QUICKBOOT_POWERON",
-                "com.lazersport.dragonbowling.DragonInicioAtivo", "com.lazersport.dragonbowling.DragonLigou")) {
+                "com.lazersport.dragonbowling.DragonInicioAtivo", "com.lazersport.dragonbowling.DragonLigou", "com.lazersport.dragonbowling.DragonSempre")) {
             if (-not $manifesto.Contains($c)) { throw "o manifesto do APK ficou sem $c." }
         }
     } finally { $z.Dispose() }

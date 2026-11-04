@@ -38,8 +38,9 @@ ninguem mexer. Este checklist garante isso. Faca na oficina, antes de levar.
     do sistema no meio do dia, nao mostra avisos do Google nem propaganda,
     e o Play Protect nao mexe no jogo. (Rede de novo so para usar o
     PREPARAR_TV.bat pelo PC.)
-[ ] Teste final: tire a MAQUINA da tomada, espere 10 s, ligue: o jogo abre
-    sozinho, sem tocar em nada. Jogue uma partida inteira.
+[ ] Teste final: (a) desligue e ligue a TV pelo CONTROLE: o jogo volta
+    sozinho em ate uns 10 s; (b) tire a MAQUINA da tomada, espere 10 s,
+    ligue: o jogo abre sozinho, sem tocar em nada. Jogue uma partida.
 [ ] Guarde o controle remoto da TV longe do publico.
 
 3. TODO DIA NO BUFFET
@@ -47,7 +48,7 @@ ninguem mexer. Este checklist garante isso. Faca na oficina, antes de levar.
 - Desligar: pode desligar direto na chave, a qualquer hora. Recordes e
   botoes sao gravados de um jeito que um corte de energia nao estraga.
 - Nada a configurar. Se o jogo travar, ele reinicia sozinho em menos de
-  1 minuto.
+  1 minuto; se outra tela aparecer por cima, o jogo volta em 20 s.
 
 4. SE ALGO DER ERRADO
 - Abriu a tela da TV em vez do jogo: HOME no controle > DRAGON BOWLING >

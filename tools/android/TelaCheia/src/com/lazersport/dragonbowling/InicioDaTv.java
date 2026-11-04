@@ -476,8 +476,27 @@ final class InicioDaTv {
 		return (r.activityInfo.applicationInfo.flags & ApplicationInfo.FLAG_SYSTEM) != 0;
 	}
 
+	/**
+	 * O GUARDA (DragonSempre) traz o jogo de volta quando ele sai da tela; aqui
+	 * ele espera um pouco: o operador usando a TV (HOME 5 vezes) ou o jogo
+	 * pedindo uma permissão na instalação.
+	 */
+	static void pausarGuarda(Context c, long ms) {
+		c.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
+				.putLong("guarda_ate", SystemClock.elapsedRealtime() + ms).commit();
+	}
+
+	static boolean guardaPausada(Context c) {
+		long ate = c.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getLong("guarda_ate", 0);
+		long agora = SystemClock.elapsedRealtime();
+		// (depois de a TV religar o relógio recomeça: um "até" maior que 20 min é velho)
+		return agora < ate && ate - agora <= 20 * 60000L;
+	}
+
 	/** Abre a tela inicial da própria TV (ou os ajustes): o nome dela, "config" ou "". */
 	static String sairParaTv(Context c) {
+		// o operador vai usar a TV: o guarda espera 15 min (HOME volta ao jogo)
+		pausarGuarda(c, 15 * 60000L);
 		ResolveInfo outra = outraTela(c);
 		if (outra != null) {
 			Intent i = home().setClassName(outra.activityInfo.packageName, outra.activityInfo.name)

@@ -94,6 +94,8 @@ public class TelaCheia extends FullScreenGodotApp {
 				@Override
 				public void run() {
 					String r = "erro";
+					// o "Permitir depuração" pode aparecer: o guarda espera
+					InicioDaTv.pausarGuarda(app, 3 * 60000L);
 					try {
 						r = InicioDaTv.prepararPeloAdb(app);
 					} catch (Throwable t) {
@@ -120,12 +122,14 @@ public class TelaCheia extends FullScreenGodotApp {
 					// Android 10+ (Google TV): como um app de auto start, o
 					// "Sobrepor a outros apps" - permitido uma vez, nunca mais pede
 					if (!InicioDaTv.podeAbrirDeFundo(TelaCheia.this)) {
+						InicioDaTv.pausarGuarda(TelaCheia.this, 3 * 60000L);
 						Log.i("DragonBowling", "inicio: pedindo 'Sobrepor a outros apps': "
 								+ InicioDaTv.pedirSobrepor(TelaCheia.this));
 					}
 				} else {
 					// TV Box Android 7.1: o aviso de "ligou" já abre o jogo; e,
 					// como o Strike Kids, o pedido da tela inicial
+					InicioDaTv.pausarGuarda(TelaCheia.this, 3 * 60000L);
 					Log.i("DragonBowling", "inicio: a TV ainda não abre o jogo (" + estado + "): "
 							+ InicioDaTv.escolher(TelaCheia.this, true));
 				}
@@ -176,12 +180,15 @@ public class TelaCheia extends FullScreenGodotApp {
 		telaCheia();
 		// a TV voltando da espera (ligada pelo controle) reinicia o jogo
 		InicioDaTv.ouvirTela(this);
+		// o guarda: a TV ligada pelo controle ou outra tela por cima - o jogo volta
+		DragonSempre.comecar(getApplicationContext());
 	}
 
 	@Override
 	protected void onResume() {
 		super.onResume();
 		Vigia.naFrente(this);
+		DragonSempre.comecar(getApplicationContext());
 		telaCheia();
 		// (de volta dos ajustes do Android: a configuração já mostra o novo estado)
 		relogio.post(gravarEstado);

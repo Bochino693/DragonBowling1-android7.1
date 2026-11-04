@@ -33,6 +33,8 @@ public class DragonLigou extends BroadcastReceiver {
 					+ (InicioDaTv.podeAbrirDeFundo(app) ? "" : " (Android 10+ sem 'Sobrepor a outros apps': pode ser barrado)"));
 			InicioDaTv.acenderTela(app);
 			InicioDaTv.abrirJogo(app);
+			// o guarda: dali em diante, a TV ligada pelo controle também abre o jogo
+			DragonSempre.comecar(app);
 		} catch (Throwable t) {
 			Log.i("DragonBowling", "inicio: ligou: " + t);
 		}
