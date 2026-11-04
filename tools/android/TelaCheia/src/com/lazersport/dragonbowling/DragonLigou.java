@@ -11,7 +11,7 @@ import android.util.Log;
  * como tela inicial (DragonInicioAtivo) o Android já o abre sozinho; isto é
  * a segunda garantia: no Android 10+ o sistema só deixa abrir daqui com
  * "Sobrepor a outros apps" permitido (InicioDaTv.podeAbrirDeFundo; o
- * PREPARAR_TV.bat permite pelo adb - o jogo nunca pede). QUICKBOOT_POWERON:
+ * PREPARAR_TV.bat permite pelo adb). QUICKBOOT_POWERON:
  * o "ligou" das TVs e TV Boxes com inicialização rápida.
  */
 public class DragonLigou extends BroadcastReceiver {

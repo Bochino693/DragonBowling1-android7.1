@@ -1014,10 +1014,9 @@ function Conferir-Apk([string]$Apk) {
         foreach ($k in @("DragonInicioAtivo", "DragonLigou", "InicioDaTv")) {
             if (-not $dex2.Contains("Lcom/lazersport/dragonbowling/$k;")) { throw "o APK ficou sem a $k (abrir ao ligar, classes2.dex)." }
         }
-        # o jogo NUNCA abre janela sozinho (na maquina so ha os botoes da Zero Delay)
-        foreach ($k in @("android.settings.action.MANAGE_OVERLAY_PERMISSION", "android.settings.HOME_SETTINGS", "android.app.role.HOME", "Landroid/app/role/RoleManager;")) {
-            if ($dex2.Contains($k)) { throw "o classes2.dex abre janela sozinho ($k): o jogo nao pode abrir nada." }
-        }
+        # o jogo pede a tela inicial como o Strike Kids, mas NUNCA a tela "Sobrepor a outros apps"
+        if (-not $dex2.Contains("Landroid/app/role/RoleManager;")) { throw "o classes2.dex nao pede a tela inicial como o Strike Kids." }
+        if ($dex2.Contains("android.settings.action.MANAGE_OVERLAY_PERMISSION")) { throw "o classes2.dex abre a tela 'Sobrepor a outros apps': nao pode." }
         foreach ($d in @($nomes.Keys | Where-Object { $_ -match '^classes\d*\.dex$' })) {
             if ((Texto-Binario (Bytes-Do-Zip $z $d)).Contains("Lcom/lazersport/dragon/usbserial/")) { throw "o APK saiu com o plugin USB antigo ($d)." }
         }
@@ -1142,9 +1141,8 @@ function Principal {
     Write-Host "  SHA256:  $hash"
     Write-Host "  So a placa Zero Delay: o Android nao pergunta nada na instalacao." -ForegroundColor Green
     Write-Host "  ABRE SOZINHO AO LIGAR: o jeito garantido e o PREPARAR_TV.bat (PC na rede da TV)." -ForegroundColor Green
-    Write-Host "  Sem PC, com o controle remoto: Android 10+ > Sobrepor a outros apps >" -ForegroundColor Green
-    Write-Host "  Dragon Bowling LIGADO; TV Box > HOME > Dragon Bowling > SEMPRE." -ForegroundColor Green
-    Write-Host "  O jogo nunca abre janela nenhuma sozinho." -ForegroundColor Green
+    Write-Host "  Sem PC (como o Strike Kids): abra o jogo e deixe parado; na 1a vez ele pede" -ForegroundColor Green
+    Write-Host "  para ser a tela inicial: escolha DRAGON BOWLING e SEMPRE. Nunca mais pergunta." -ForegroundColor Green
     Write-Host "  So instala na memoria interna da TV (nunca no pendrive)." -ForegroundColor Green
     Write-Host "  1a VEZ COM ESTA CHAVE: desinstale da TV Box o Dragon Bowling antigo" -ForegroundColor Yellow
     Write-Host "  (Build 10 ou anterior, assinado com outra chave) e instale este." -ForegroundColor Yellow
@@ -1329,8 +1327,8 @@ function Preparar-Tv([string]$Apk, [switch]$SempreInstalar) {
     [void](Adb @("shell", "monkey", "-p", $Pacote, "-c", "android.intent.category.LAUNCHER", "1"))
 
     Titulo "So o jogo ao ligar"
-    # a tela inicial do jogo vem DESLIGADA no APK (sem a janela "qual tela
-    # inicial usar" ao ligar): aqui ela e ligada e ja escolhida, sem janela
+    # a tela inicial do jogo: ligada (o -DevolverTv a desliga) e ja escolhida,
+    # sem nada aparecer na TV
     [void](Adb @("shell", "pm", "enable", "$Pacote/$InicioAtivo"))
     [void](Adb @("shell", "cmd", "package", "set-home-activity", "$Pacote/$InicioAtivo"))
     if ($sdk -ge 29) { [void](Adb @("shell", "cmd", "role", "add-role-holder", "android.app.role.HOME", $Pacote)) }

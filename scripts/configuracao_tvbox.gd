@@ -102,10 +102,10 @@ func _abre_ao_ligar(fonte: Font) -> void:
 		texto = "ABRE SOZINHO AO LIGAR: SIM (TELA INICIAL)"
 	elif sobrepor == "sim" or sobrepor == "nao_precisa":
 		texto = "ABRE SOZINHO AO LIGAR: SIM (AVISO DE LIGAR)"
-		dica = "MAIS GARANTIDO: PREPARAR_TV.bat NO PC (TELA INICIAL)  ·  " + android
+		dica = "MAIS GARANTIDO: HOME > DRAGON BOWLING > SEMPRE  ·  " + android
 	else:
 		texto = "ABRE SOZINHO AO LIGAR: NÃO  ·  " + android
-		dica = "PERMITA \"SOBREPOR A OUTROS APPS\" OU RODE O PREPARAR_TV.bat NO PC"
+		dica = "DEIXE O JOGO PARADO 20 s E ESCOLHA DRAGON BOWLING > SEMPRE (OU HOME)"
 		cor = Color(1.0, 0.45, 0.35)
 	_rotulo(fonte, texto, Vector2(0, 1180), 26, cor)
 	if dica != "":

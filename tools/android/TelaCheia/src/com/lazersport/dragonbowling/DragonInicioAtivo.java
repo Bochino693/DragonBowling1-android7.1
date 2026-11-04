@@ -7,9 +7,8 @@ import android.os.Bundle;
  * O JOGO ABRE SOZINHO AO LIGAR A TV (a StrikeInicioAtivo do Strike Kids).
  *
  * Esta atividade invisível é uma TELA INICIAL do Android (filtro HOME no
- * manifesto). Vem DESLIGADA no APK, para o Android nunca mostrar a janela
- * "qual tela inicial usar"; o PREPARAR_TV.bat (adb) a liga e escolhe.
- * Escolhida como a tela inicial da TV, é ela que o
+ * manifesto), como a StrikeInicioAtivo. Escolhida como a tela inicial da TV
+ * ("Sempre"; o jogo pede sozinho, como o Strike Kids), é ela que o
  * Android abre ao ligar a TV, ao voltar do modo de espera para o início e a
  * cada HOME do controle: só traz o jogo para a frente (ou abre) e fecha na
  * hora. Se o jogo fechar ou cair, o Android volta para a tela inicial - e o

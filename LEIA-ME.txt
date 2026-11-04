@@ -1,4 +1,4 @@
-DRAGON BOWLING - TV BOX MALI-450 (ANDROID 7.1) - BUILD 14
+DRAGON BOWLING - TV BOX MALI-450 (ANDROID 7.1) - BUILD 15
 =========================================================
 
 PARA QUAL MAQUINA E ESTA VERSAO
@@ -43,99 +43,72 @@ O pacote continua com.lazersport.dragonbowling.s905l (nao briga com a
 versao da Pro Ultra). O Android nao pergunta nada na instalacao (a unica
 permissao, a de abrir ao ligar, ele da sozinho).
 
-ABRE SOZINHO AO LIGAR E NUNCA SAI DA TV (BUILDS 12 A 14)
---------------------------------------------------------
-O mesmo metodo do Strike Kids, para TV Box (Android 7.1) e placa da TV
-(Android TV 10 a 14). O jogo abre sozinho ao ligar de tres jeitos:
-1. TELA INICIAL: o Dragon Bowling e uma tela inicial do Android. Feito
-   uma vez, o Android abre o jogo ao ligar na tomada, ao voltar do modo de
-   espera e a cada HOME; e se o jogo fechar ou cair, abre de novo.
-2. AVISO DE "LIGOU": ligada na tomada, a placa avisa os apps
-   (BOOT_COMPLETED / QUICKBOOT_POWERON) e o jogo se abre. No Android 10
-   ou mais novo (as TVs com Android TV) isso so funciona com "Sobrepor a
-   outros apps" permitido para o jogo.
-3. VOLTA DA ESPERA: desligada pelo CONTROLE, a TV fica so em espera; ao
-   religar (10 s ou mais apagada) o jogo reinicia do zero e vem para a
-   frente.
-COMO DEIXAR PRONTO - O JEITO GARANTIDO (PC, uma vez por TV). NO GOOGLE TV
-E OBRIGATORIO: o Google nao deixa nenhum app trocar a tela do Google TV nem
-se abrir sozinho ao ligar - so pelo adb, e o PREPARAR_TV.bat faz isso.
+ABRE SOZINHO AO LIGAR (BUILD 15 - IGUAL AO STRIKE KIDS)
+------------------------------------------------------
+O mesmo metodo do Strike Kids, que ja abre sozinho na placa da TV: o
+mesmo codigo (InicioDaTv), so com os nomes do Dragon Bowling.
+COMO DEIXAR PRONTO (uma vez por TV, com o controle remoto):
+  1. Instale o APK (por cima do antigo: as configuracoes ficam) e abra o
+     jogo uma vez pela lista de apps.
+  2. Deixe o jogo parado uns 20 s: ele mesmo pede ao Android para ser a
+     tela inicial. Pode aparecer:
+       - "Definir Dragon Bowling como app de tela inicial?": ACEITE;
+       - a janela "Sempre / So uma vez": DRAGON BOWLING e SEMPRE;
+       - os ajustes "Tela inicial"/"App de inicio": escolha DRAGON
+         BOWLING e volte.
+     Nao apareceu nada? Aperte HOME no controle: DRAGON BOWLING e SEMPRE.
+  3. Confira: SELECT (configuracao) mostra "ABRE SOZINHO AO LIGAR: SIM
+     (TELA INICIAL)". Tire a TV da tomada, espere 10 s e ligue.
+  Escolhido uma vez, o jogo NUNCA MAIS pergunta: o cliente nunca ve janela.
+  O jogo nunca abre a tela "Sobrepor a outros apps".
+O jogo abre sozinho de tres jeitos:
+1. TELA INICIAL: escolhido, o Android abre o jogo ao ligar na tomada, ao
+   voltar do modo de espera e a cada HOME; se o jogo fechar ou cair, abre
+   de novo.
+2. AVISO DE "LIGOU": ligada na tomada, o jogo se abre (TV Box Android 7.1;
+   no Android 10+ so com "Sobrepor a outros apps", que o PREPARAR_TV.bat
+   permite).
+3. VOLTA DA ESPERA: desligada pelo CONTROLE, a TV fica em espera; ao
+   religar (10 s ou mais apagada) o jogo reinicia do zero.
+PELO PC (ultimo recurso - Google TV que nao deixa trocar a tela inicial):
   a. Na TV: Configuracoes > Sistema > Sobre > clique 7 vezes em "Build do
-     SO do Android TV" (ou "Numero da versao") ate aparecer "voce e um
-     desenvolvedor". Volte: Configuracoes > Sistema > Opcoes do
-     desenvolvedor > Depuracao USB LIGADA (e "Depuracao por rede"/"ADB
-     pela rede", se houver).
-  b. Anote o IP da TV: Configuracoes > Rede e Internet > (a rede).
-  c. No PC (mesma rede da TV): dois cliques em PREPARAR_TV.bat e digite o
-     IP. Na TV, aceite "Permitir depuracao" (marque "Sempre permitir deste
-     computador"). O jogo ja instalado pelo pendrive serve: ele nao
-     reinstala (com o APK em APK-Pronto, instala ou atualiza).
-  d. Ele poe o jogo como TELA INICIAL e DESLIGA as telas da TV (no Google
-     TV: a tela do Google TV e o assistente "setupwraith", que a religaria
-     ao ligar) - so depois de conferir que a tela do jogo esta ligada.
-     Permite "Sobrepor a outros apps", tira o descanso de tela e o
-     "desligar por inatividade", confere e diz TV PRONTA (ou o que faltou).
-  e. Teste: tire a TV da tomada, espere 10 s e ligue: abre SO o jogo.
-  f. Na TV, confira tambem o que ela faz quando a energia volta (nome muda
-     de marca para marca): Configuracoes > Sistema > Energia (e energia) >
-     "Comportamento ao ligar" = TELA INICIAL (nao "ultima entrada"/HDMI) e,
-     se existir, "Ligar quando a energia voltar"/"Modo de energia" = LIGADA.
-  Para a TV voltar a ser TV: PREPARAR_TV.bat -DevolverTv (religa as telas
-  da TV; o jogo continua instalado). PREPARAR_TV.bat -ManterTelaDaTv nao
-  desliga a tela da TV (no Google TV, assim o jogo nao abre sozinho).
-  Gerando o APK no mesmo PC: GERAR_APK_AGORA.bat -Instalar -Ip <IP> faz
-  tudo isso depois de gerar.
-  ATENCAO: com a tela da TV desligada, NAO desinstale o jogo (a TV ficaria
-  sem tela inicial); para trocar de versao, instale por cima. Desinstalou?
-  Rode PREPARAR_TV.bat -DevolverTv.
-SEM PC (a TV ja montada na maquina):
-  - INSTALAR: na Play Store da TV, instale um gerenciador de arquivos (ex.:
-    "X-plore File Manager") - o visualizador de USB da TV esconde os .apk.
-    Libere-o em Configuracoes > Apps (ou Privacidade) > Seguranca e
-    restricoes > Fontes desconhecidas. Pendrive em FAT32, APK copiado
-    inteiro ("Ejetar" no PC). Abra o APK pelo gerenciador > Instalar.
-    Sem pendrive: o app "Downloader" (Play Store da TV) baixa o APK de um
-    link (Dropbox com ?dl=1, Google Drive...) e instala.
-  - SO O JOGO AO LIGAR: pelo celular Android, com um app de adb - veja
-    PREPARAR_TV_SEM_PC.txt (uma linha para colar). Ou qualquer PC na mesma
-    rede Wi-Fi da TV, mesmo longe da maquina: o adb e pela rede, sem cabo.
-A TV NAO LE O APK PELO PENDRIVE? Instale pelo PC: com o APK em APK-Pronto
-e a Depuracao USB ligada (passo a acima), o PREPARAR_TV.bat instala pelo
-adb - sem pendrive, sem gerenciador de arquivos e sem "fontes
-desconhecidas" - e ja deixa a TV pronta. Se a TV recusar, ele diz o motivo
-(APK estragado, Play Protect, placa nao ARM, falta de espaco...). Pelo
-pendrive, confira: pendrive em FAT32; o APK copiado inteiro (use "Ejetar"
-no PC antes de tirar); um gerenciador de arquivos (o visualizador de USB da
-TV esconde os .apk) com "Fontes desconhecidas" ligado para ele
-(Configuracoes > Apps (ou Privacidade) > Seguranca e restricoes).
-
-O JOGO NUNCA ABRE JANELA NENHUMA SOZINHO (build 14): na maquina so ha os
-botoes da Zero Delay e ninguem conseguiria fechar uma janela do Android.
-Por isso a tela inicial e feita so pelo PC (PREPARAR_TV.bat, acima); sem
-PC, o tecnico liga o "Sobrepor" uma vez com o controle remoto:
-SEM PC (pendrive): instale e abra o jogo uma vez pela lista de apps. Depois,
-com o controle remoto:
-  - TV com Android TV (10 a 14): Configuracoes > Apps (ou Privacidade) >
-    Acesso especial a apps > Sobrepor a outros apps > Dragon Bowling:
-    PERMITIDO.
-  - TV Box (Android 7.1): nada a fazer - o aviso de "ligou" abre o jogo.
-A tela inicial do jogo vem DESLIGADA no APK (assim o Android nunca mostra
-a janela "qual tela inicial usar"): so o PREPARAR_TV.bat a liga, ja
-escolhida. O jogo nao pede permissao nenhuma (a Zero Delay e um controle
-comum).
-CONFERIR: na abertura ou no menu, SELECT (configuracao). A linha "ABRE
-SOZINHO AO LIGAR" diz SIM (TELA INICIAL), SIM (AVISO DE LIGAR) ou NAO e o
-que fazer. Depois tire a TV da tomada, espere 10 s e ligue.
-SAIR PARA A TELA DA TV (operador): HOME 5 vezes seguidas abre a tela
-inicial da propria TV; um HOME de novo volta ao jogo.
-O JOGO NAO SOME: a build 13 so instala na MEMORIA INTERNA da TV (nunca num
-pendrive ou cartao formatado como memoria da TV, de onde sumiria ao tirar
-o pendrive) e o Android nao deixa move-lo. Atualizar e sempre POR CIMA
-(mesma chave): nao desinstale para atualizar. Se o Google Play Protect
-perguntar sobre o jogo, escolha manter/instalar mesmo assim.
-Quem ja tinha escolhido o Dragon Bowling como tela inicial (ate a build
-11): na 1a vez com a build 12 ou 13 o Android pergunta de novo - escolha
-Dragon Bowling e SEMPRE (ou rode o PREPARAR_TV.bat).
+     SO do Android TV"; Configuracoes > Sistema > Opcoes do desenvolvedor >
+     Depuracao USB LIGADA. Anote o IP (Configuracoes > Rede e Internet).
+  b. No PC (mesma rede Wi-Fi, sem cabo): PREPARAR_TV.bat e digite o IP; na
+     TV aceite "Permitir depuracao". Ele instala (se faltar), poe o jogo
+     como tela inicial, desliga as telas da TV (no Google TV, a do Google
+     TV e o "setupwraith") so depois de conferir a do jogo, permite
+     "Sobrepor", tira o descanso de tela e o "desligar por inatividade" e
+     diz TV PRONTA. Sem PC: PREPARAR_TV_SEM_PC.txt (celular Android).
+  c. Na TV: Configuracoes > Sistema > Energia > "Comportamento ao ligar" =
+     TELA INICIAL (nao "ultima entrada"/HDMI); se existir, "Ligar quando a
+     energia voltar" = LIGADA.
+INSTALAR SEM PC (a TV ja montada na maquina): na Play Store da TV, um
+gerenciador de arquivos (ex.: "X-plore File Manager" - o visualizador de
+USB da TV esconde os .apk), liberado em Configuracoes > Apps (ou
+Privacidade) > Seguranca e restricoes > Fontes desconhecidas. Pendrive em
+FAT32, APK copiado inteiro ("Ejetar" no PC). Sem pendrive: o app
+"Downloader" da Play Store baixa o APK de um link (Dropbox ?dl=1, Drive).
+Pelo PC, o PREPARAR_TV.bat instala pelo adb e diz o motivo se a TV recusar.
+TROCAS (conferido):
+  - ATUALIZAR O JOGO: instale POR CIMA (mesma chave, versao maior). A
+    escolha da tela inicial, o "Sobrepor" e as telas desligadas
+    continuam; nada pergunta de novo.
+  - TROCAR A TV OU A PLACA: instale o APK na nova e repita o COMO DEIXAR
+    PRONTO (ou o PREPARAR_TV.bat).
+  - DESINSTALAR: a TV volta sozinha para a propria tela inicial - menos
+    se o PREPARAR_TV.bat desligou a tela da TV: rode antes
+    PREPARAR_TV.bat -DevolverTv (senao a TV fica sem tela inicial).
+  - A TV VOLTAR A SER TV: com o PREPARAR_TV, -DevolverTv (o jogo para de
+    pedir); escolhido pelo controle, nos ajustes "Tela inicial" escolha a
+    da TV (o jogo pede de novo enquanto estiver instalado).
+  - QUEM VEM DA BUILD 13 OU 14: abra o jogo uma vez e escolha DRAGON
+    BOWLING e SEMPRE quando ele pedir.
+SAIR PARA A TELA DA TV (operador): HOME 5 vezes seguidas; um HOME volta.
+O JOGO NAO SOME: so instala na MEMORIA INTERNA da TV (nunca num pendrive
+ou cartao formatado como memoria da TV) e o Android nao deixa move-lo. Se
+o Google Play Protect perguntar sobre o jogo, escolha manter/instalar.
+O jogo nao pede permissao nenhuma (a Zero Delay e um controle comum).
 
 O QUE A BUILD 11 TRAZ (MALI-450: LISO, SEM ENGASGO, SEM QUEBRAR)
 ----------------------------------------------------------------

@@ -1,8 +1,10 @@
 package com.lazersport.dragonbowling;
 
 import android.app.Activity;
+import android.app.role.RoleManager;
 import android.content.ActivityNotFoundException;
 import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -10,6 +12,7 @@ import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
@@ -25,40 +28,40 @@ import java.util.List;
 
 /**
  * O JOGO ABRE SOZINHO AO LIGAR A TV - de qualquer jeito que ela seja ligada.
- * O método do Strike Kids (repositório beta, strike-kids-gles2:
- * tools/android/StrikeSerial/.../InicioDaTv.java), para as máquinas ficarem
- * todas iguais - mas SEM ABRIR JANELA NENHUMA: na máquina só há os botões da
- * Zero Delay e ninguém consegue fechar uma janela do Android.
+ * CÓPIA do InicioDaTv do Strike Kids (repositório beta, strike-kids-gles2:
+ * tools/android/StrikeSerial/.../InicioDaTv.java), o método que já funciona
+ * na placa da TV: só os nomes mudam. A mais, só o que grava o estado para a
+ * tela de configuração do jogo (gravarEstado) - nada que apareça na tela.
  *
  * 1. TELA INICIAL: o jogo é uma tela inicial do Android (DragonInicioAtivo).
  *    Escolhido como a tela inicial da TV, é ele que o Android abre ao ligar
- *    na tomada, ao voltar para o início e a cada HOME. estado() diz se já é.
- *    Ela vem DESLIGADA no APK (senão o Android mostraria ao ligar a janela
- *    "qual tela inicial usar"): o PC (PREPARAR_TV.bat, adb) a liga e já a
- *    escolhe, sem nada aparecer na TV - o jogo nunca pergunta.
- * 2. AVISO DE "LIGOU": ligada na tomada, DragonLigou abre o jogo. No Android
- *    10+ (Android TV) só com "Sobrepor a outros apps" permitido
- *    (podeAbrirDeFundo) - o PREPARAR_TV.bat permite pelo adb.
- * 3. VOLTA DA ESPERA: desligada pelo CONTROLE, a TV não desliga de verdade
+ *    na tomada, ao voltar para o início e a cada HOME. estado() diz se já é;
+ *    escolher() abre a escolha do Android (o papel HOME do Android 10+, os
+ *    ajustes da tela inicial ou a janela "Sempre / Só uma vez") - o jogo
+ *    pede sozinho enquanto não for (TelaCheia, sozinho = true). Escolhido
+ *    uma vez, nunca mais pergunta.
+ * 2. VOLTA DA ESPERA: desligada pelo CONTROLE, a TV não desliga de verdade
  *    (fica em espera) e nada "liga" de novo - um app de "abrir ao ligar" não
  *    percebe nada. Com o processo do jogo vivo (mesmo fechado ou atrás de
  *    outro app), ouvirTela() percebe a tela apagar e acender: depois de 10 s
  *    ou mais apagada, o jogo reinicia do zero (como ao ligar na tomada) e
  *    vem para a frente, sem a imagem travada da placa de vídeo depois da
- *    espera.
- * 4. SAÍDA DO OPERADOR: HOME 5 vezes seguidas no controle remoto
- *    (pediuParaSair) abre a tela inicial da própria TV (sairParaTv).
- * O estado vai para a tela de configuração do jogo (gravarEstado).
+ *    espera. Ligada na tomada, DragonLigou também abre o jogo.
+ * 3. SAÍDA DO OPERADOR: sairParaTv() abre a tela inicial da própria TV (HOME
+ *    5 vezes seguidas - pediuParaSair()).
  */
 final class InicioDaTv {
 
 	private static final String TAG = "DragonBowling";
+	static final int PEDIDO_PAPEL = 7501;
 	private static final String PREFS = "dragon_inicio";
 	private static final int VEZES_PARA_SAIR = 5;
 	private static final long JANELA_SAIR_MS = 10000;
 	private static final long APAGADA_PARA_REINICIAR_MS = 10000;
 	private static final long ESPERA_AO_ACENDER_MS = 1500;
 
+	private static long pedidoEm = 0;
+	private static boolean pedidoSozinho = false;
 	private static long apagouEm = 0;
 	private static BroadcastReceiver tela;
 
@@ -108,6 +111,20 @@ final class InicioDaTv {
 		return false;
 	}
 
+	/**
+	 * A tela inicial do jogo está ligada? O PREPARAR_TV.bat -DevolverTv a
+	 * desliga (a TV volta a ser TV): aí o jogo não pede mais nada.
+	 */
+	static boolean telaDoJogoLigada(Context c) {
+		try {
+			int e = c.getPackageManager().getComponentEnabledSetting(new ComponentName(c, DragonInicioAtivo.class));
+			return e != PackageManager.COMPONENT_ENABLED_STATE_DISABLED
+					&& e != PackageManager.COMPONENT_ENABLED_STATE_DISABLED_USER;
+		} catch (Throwable t) {
+			return true;
+		}
+	}
+
 	/** "jogo" (a TV já abre o jogo), "escolher" (o Android ainda pergunta) ou "outra|Nome". */
 	static String estado(Context c) {
 		ResolveInfo ri = padrao(c);
@@ -122,6 +139,72 @@ final class InicioDaTv {
 			return "escolher";
 		}
 		return "outra|" + ri.loadLabel(c.getPackageManager());
+	}
+
+	/**
+	 * Abre a escolha da tela inicial: "ja" (já é o jogo), "papel" (a janela do
+	 * Android 10+), "ajustes", "escolha" (a janela "Sempre / Só uma vez"),
+	 * "app" (a página da tela inicial da TV: "Limpar padrões"), "config" ou ""
+	 * (nada abriu). sozinho (o jogo pedindo na tela de espera): só as janelas
+	 * de escolha, nunca a página do app nem os ajustes gerais.
+	 */
+	static String escolher(Activity a, boolean sozinho) {
+		String agora = estado(a);
+		if (agora.equals("jogo")) {
+			return "ja";
+		}
+		pedidoSozinho = sozinho;
+		if (Build.VERSION.SDK_INT >= 29 && pedirPapel(a)) {
+			return "papel";
+		}
+		return semPapel(a, agora, sozinho);
+	}
+
+	private static boolean pedirPapel(Activity a) {
+		try {
+			RoleManager rm = a.getSystemService(RoleManager.class);
+			if (rm == null || !rm.isRoleAvailable(RoleManager.ROLE_HOME) || rm.isRoleHeld(RoleManager.ROLE_HOME)) {
+				return false;
+			}
+			pedidoEm = SystemClock.elapsedRealtime();
+			a.startActivityForResult(rm.createRequestRoleIntent(RoleManager.ROLE_HOME), PEDIDO_PAPEL);
+			return true;
+		} catch (Throwable t) {
+			Log.i(TAG, "inicio: papel: " + t);
+			return false;
+		}
+	}
+
+	/** A janela do papel voltou: se ela nem apareceu (TV sem essa janela), segue pelos ajustes. */
+	static void depoisDoPapel(Activity a, int resultado) {
+		if (resultado == Activity.RESULT_OK || SystemClock.elapsedRealtime() - pedidoEm > 1500) {
+			return;
+		}
+		String agora = estado(a);
+		if (!agora.equals("jogo")) {
+			semPapel(a, agora, pedidoSozinho);
+		}
+	}
+
+	private static String semPapel(Activity a, String agora, boolean sozinho) {
+		if (abrir(a, new Intent(Settings.ACTION_HOME_SETTINGS))) {
+			return "ajustes";
+		}
+		if (agora.equals("escolher") && abrir(a, home())) {
+			return "escolha";
+		}
+		if (sozinho) {
+			return "";
+		}
+		ResolveInfo ri = padrao(a);
+		if (ri != null && ri.activityInfo != null && !ri.activityInfo.packageName.equals(a.getPackageName())
+				&& abrir(a, new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:" + ri.activityInfo.packageName)))) {
+			return "app";
+		}
+		if (abrir(a, new Intent(Settings.ACTION_SETTINGS))) {
+			return "config";
+		}
+		return "";
 	}
 
 	// ------------------------------------------------------------ Android 10+
@@ -192,11 +275,7 @@ final class InicioDaTv {
 		return (r.activityInfo.applicationInfo.flags & ApplicationInfo.FLAG_SYSTEM) != 0;
 	}
 
-	/**
-	 * Abre a tela inicial da própria TV (ou os ajustes, se o PREPARAR_TV.bat
-	 * -SoOJogo desligou a da TV): o nome dela, "config" ou "". Só quando o
-	 * operador aperta HOME 5 vezes no controle remoto.
-	 */
+	/** Abre a tela inicial da própria TV (ou os ajustes): o nome dela, "config" ou "". */
 	static String sairParaTv(Context c) {
 		ResolveInfo outra = outraTela(c);
 		if (outra != null) {
@@ -209,7 +288,7 @@ final class InicioDaTv {
 		return abrir(c, new Intent(Settings.ACTION_SETTINGS)) ? "config" : "";
 	}
 
-	/** HOME 5 vezes em 10 s: true = sair para a tela da TV. */
+	/** HOME 5 vezes em 10 s (ou o jogo caindo sem parar): true = sair para a tela da TV. */
 	static boolean pediuParaSair(Context c) {
 		SharedPreferences p = c.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
 		long agora = SystemClock.elapsedRealtime();
