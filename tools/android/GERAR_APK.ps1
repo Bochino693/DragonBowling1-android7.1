@@ -1011,13 +1011,12 @@ function Conferir-Apk([string]$Apk) {
         $dex2 = Texto-Binario (Bytes-Do-Zip $z "classes2.dex")
         if (-not $dex2.Contains("Lcom/lazersport/dragonbowling/TelaCheia;")) { throw "o APK ficou sem a atividade de tela cheia (classes2.dex)." }
         # o jogo abre sozinho ao ligar (o metodo do Strike Kids)
-        foreach ($k in @("DragonInicioAtivo", "DragonLigou", "InicioDaTv")) {
+        foreach ($k in @("DragonInicioAtivo", "DragonLigou", "InicioDaTv", "Vigia")) {
             if (-not $dex2.Contains("Lcom/lazersport/dragonbowling/$k;")) { throw "o APK ficou sem a $k (abrir ao ligar, classes2.dex)." }
         }
-        # o jogo NUNCA abre janela sozinho (na maquina so ha os botoes da Zero Delay)
-        foreach ($k in @("android.settings.action.MANAGE_OVERLAY_PERMISSION", "android.settings.HOME_SETTINGS", "android.app.role.HOME", "Landroid/app/role/RoleManager;")) {
-            if ($dex2.Contains($k)) { throw "o classes2.dex abre janela sozinho ($k): o jogo nao pode abrir nada." }
-        }
+        # o jogo pede a tela inicial como o Strike Kids, mas NUNCA a tela "Sobrepor a outros apps"
+        if (-not $dex2.Contains("Landroid/app/role/RoleManager;")) { throw "o classes2.dex nao pede a tela inicial como o Strike Kids." }
+        if ($dex2.Contains("android.settings.action.MANAGE_OVERLAY_PERMISSION")) { throw "o classes2.dex abre a tela 'Sobrepor a outros apps': nao pode." }
         foreach ($d in @($nomes.Keys | Where-Object { $_ -match '^classes\d*\.dex$' })) {
             if ((Texto-Binario (Bytes-Do-Zip $z $d)).Contains("Lcom/lazersport/dragon/usbserial/")) { throw "o APK saiu com o plugin USB antigo ($d)." }
         }
@@ -1142,9 +1141,8 @@ function Principal {
     Write-Host "  SHA256:  $hash"
     Write-Host "  So a placa Zero Delay: o Android nao pergunta nada na instalacao." -ForegroundColor Green
     Write-Host "  ABRE SOZINHO AO LIGAR: o jeito garantido e o PREPARAR_TV.bat (PC na rede da TV)." -ForegroundColor Green
-    Write-Host "  Sem PC, com o controle remoto: Android 10+ > Sobrepor a outros apps >" -ForegroundColor Green
-    Write-Host "  Dragon Bowling LIGADO; TV Box > HOME > Dragon Bowling > SEMPRE." -ForegroundColor Green
-    Write-Host "  O jogo nunca abre janela nenhuma sozinho." -ForegroundColor Green
+    Write-Host "  Sem PC (como o Strike Kids): abra o jogo e deixe parado; na 1a vez ele pede" -ForegroundColor Green
+    Write-Host "  para ser a tela inicial: escolha DRAGON BOWLING e SEMPRE. Nunca mais pergunta." -ForegroundColor Green
     Write-Host "  So instala na memoria interna da TV (nunca no pendrive)." -ForegroundColor Green
     Write-Host "  1a VEZ COM ESTA CHAVE: desinstale da TV Box o Dragon Bowling antigo" -ForegroundColor Yellow
     Write-Host "  (Build 10 ou anterior, assinado com outra chave) e instale este." -ForegroundColor Yellow
@@ -1238,17 +1236,34 @@ function Ligar-Tv {
         "PC e TV na mesma rede; rode PREPARAR_TV.bat -Ip <IP da TV>.")
 }
 
+# Instala pelo adb: nao depende do pendrive, de gerenciador de arquivos nem
+# de "fontes desconhecidas" na TV (as TVs que "nao leem" o APK pelo pendrive
+# instalam assim). Se recusar, diz o motivo em portugues.
 function Instalar-Na-Tv([string]$Apk) {
     $log = Join-Path $script:Logs "adb-instalar.log"
+    Info "instalando pelo adb (se a TV mostrar o Play Protect, escolha 'Instalar mesmo assim' com o controle remoto)..."
     $cod = Executar $script:Adb @("-s", $script:Serial, "install", "-r", $Apk) -Log $log -LimiteMin 10 -Rotulo "adb"
     $texto = Ler-Log $log
-    if ($texto -match 'Success') { Ok "instalado: $(Split-Path $Apk -Leaf)"; return }
+    if ($texto -match '(?m)^Success') { Ok "instalado: $(Split-Path $Apk -Leaf)"; return }
+    $falha = [Regex]::Match($texto, 'Failure \[[^\]]*\]|INSTALL_[A-Z_]+[^\r\n]*|error: [^\r\n]+').Value
     if ($texto -match 'INSTALL_FAILED_UPDATE_INCOMPATIBLE') {
         throw "a TV tem um Dragon Bowling com outra assinatura (build 10 ou anterior): desinstale-o da TV e rode de novo (os recordes zeram)."
     }
     if ($texto -match 'INSTALL_FAILED_VERSION_DOWNGRADE') { throw "a TV tem um Dragon Bowling MAIS NOVO que este APK: use o APK mais novo." }
     if ($texto -match 'INSUFFICIENT_STORAGE') { throw "falta espaco na MEMORIA INTERNA da TV: apague apps que nao usa e rode de novo." }
-    throw "o adb nao instalou (codigo $cod; veja adb-instalar.log)."
+    if ($texto -match 'INSTALL_PARSE_FAILED|INSTALL_FAILED_INVALID_APK|Failed to parse|not a valid zip|Invalid APK') {
+        throw "o APK em APK-Pronto esta estragado ($falha): gere de novo com o GERAR_APK_AGORA.bat."
+    }
+    if ($texto -match 'NO_MATCHING_ABIS') { throw "a placa da TV nao e ARM ($falha): o jogo tem so os motores ARM de 32 e 64 bits." }
+    if ($texto -match 'INSTALL_FAILED_OLDER_SDK') { throw "o Android da TV e antigo demais ($falha): o jogo precisa do Android 5.0 ou mais novo." }
+    if ($texto -match '(?i)VERIFICATION|Play ?Protect|verif|BLOCKED|developer') {
+        throw ("o Google (Play Protect) barrou a instalacao ($falha). Na TV: Play Store > icone do perfil > Play Protect > " +
+            "engrenagem > DESLIGUE 'Verificar apps com o Play Protect'; rode o PREPARAR_TV.bat de novo e depois ligue de volta.")
+    }
+    if ($texto -match 'USER_RESTRICTED|INSTALL_FAILED_ABORTED') {
+        throw "a TV recusou ou nao confirmou a instalacao ($falha): olhe a tela da TV (Play Protect ou 'Instalar?') e responda com o controle remoto; rode de novo."
+    }
+    throw "o adb nao instalou (codigo $cod; $falha; veja adb-instalar.log)."
 }
 
 # A versao do jogo na TV (versionCode; 0 = nao instalado).
@@ -1312,8 +1327,8 @@ function Preparar-Tv([string]$Apk, [switch]$SempreInstalar) {
     [void](Adb @("shell", "monkey", "-p", $Pacote, "-c", "android.intent.category.LAUNCHER", "1"))
 
     Titulo "So o jogo ao ligar"
-    # a tela inicial do jogo vem DESLIGADA no APK (sem a janela "qual tela
-    # inicial usar" ao ligar): aqui ela e ligada e ja escolhida, sem janela
+    # a tela inicial do jogo: ligada (o -DevolverTv a desliga) e ja escolhida,
+    # sem nada aparecer na TV
     [void](Adb @("shell", "pm", "enable", "$Pacote/$InicioAtivo"))
     [void](Adb @("shell", "cmd", "package", "set-home-activity", "$Pacote/$InicioAtivo"))
     if ($sdk -ge 29) { [void](Adb @("shell", "cmd", "role", "add-role-holder", "android.app.role.HOME", $Pacote)) }

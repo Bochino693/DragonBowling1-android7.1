@@ -65,3 +65,28 @@ func _manter_tela_ligada() -> void:
 	# Economia de processador desligada: com ela, o Godot só redesenha
 	# quando "algo muda" e uma tela parada podia ficar sem quadro novo.
 	OS.low_processor_usage_mode = false
+
+
+## GRAVAR SEM PERDER NADA NUM CORTE DE ENERGIA (no buffet a máquina é
+## desligada no disjuntor, às vezes bem na tela final, quando o recorde é
+## gravado). O arquivo novo vai para "<arquivo>.novo" e só depois troca de
+## nome por cima do antigo - a troca é de uma vez só: fica o antigo inteiro
+## ou o novo inteiro, nunca um pedaço. O anterior fica em "<arquivo>.bak".
+func gravar_seguro(cfg: ConfigFile, caminho: String) -> int:
+	var novo := caminho + ".novo"
+	var err := cfg.save(novo)
+	if err != OK:
+		return err
+	var d := Directory.new()
+	if d.file_exists(caminho):
+		d.copy(caminho, caminho + ".bak")
+	return d.rename(novo, caminho)
+
+
+## Lê o arquivo; estragado ou sumido, lê a cópia de reserva (.bak).
+func carregar_seguro(cfg: ConfigFile, caminho: String) -> int:
+	if cfg.load(caminho) == OK:
+		return OK
+	for secao in cfg.get_sections():
+		cfg.erase_section(secao)
+	return cfg.load(caminho + ".bak")

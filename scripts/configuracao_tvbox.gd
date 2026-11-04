@@ -81,7 +81,8 @@ func _medidor_de_tela(fonte: Font) -> void:
 ## O JOGO ABRE SOZINHO AO LIGAR? O Android do jogo (TelaCheia, InicioDaTv)
 ## grava user://inicio_tv.cfg sempre que o jogo volta para a frente:
 ## tela_inicial (jogo, escolher ou outra|Nome), sobrepor (sim, nao ou
-## nao_precisa: Android 7.1) e a versão do Android. Sem o arquivo (PC), nada.
+## nao_precisa: Android 7.1), a versão do Android e quantas vezes o Vigia
+## reiniciou o jogo travado. Sem o arquivo (PC), nada.
 func _abre_ao_ligar(fonte: Font) -> void:
 	var f := File.new()
 	if f.open("user://inicio_tv.cfg", File.READ) != OK:
@@ -102,14 +103,18 @@ func _abre_ao_ligar(fonte: Font) -> void:
 		texto = "ABRE SOZINHO AO LIGAR: SIM (TELA INICIAL)"
 	elif sobrepor == "sim" or sobrepor == "nao_precisa":
 		texto = "ABRE SOZINHO AO LIGAR: SIM (AVISO DE LIGAR)"
-		dica = "MAIS GARANTIDO: PREPARAR_TV.bat NO PC (TELA INICIAL)  ·  " + android
+		dica = "MAIS GARANTIDO: HOME > DRAGON BOWLING > SEMPRE  ·  " + android
 	else:
 		texto = "ABRE SOZINHO AO LIGAR: NÃO  ·  " + android
-		dica = "PERMITA \"SOBREPOR A OUTROS APPS\" OU RODE O PREPARAR_TV.bat NO PC"
+		dica = "DEIXE O JOGO PARADO 20 s E ESCOLHA DRAGON BOWLING > SEMPRE (OU HOME)"
 		cor = Color(1.0, 0.45, 0.35)
 	_rotulo(fonte, texto, Vector2(0, 1180), 26, cor)
 	if dica != "":
 		_rotulo(fonte, dica, Vector2(0, 1230), 20, Color(1, 1, 1, 0.7))
+	# o Vigia (Java) reinicia o jogo que trava; aqui o técnico vê quantas vezes
+	var travou: int = int(estado.get("vigia", "0"))
+	if travou > 0:
+		_rotulo(fonte, "O JOGO TRAVOU E VOLTOU SOZINHO: %d VEZ(ES)" % travou, Vector2(0, 1275), 20, Color(1.0, 0.86, 0.2, 0.85))
 
 
 func _rotulo(fonte: Font, texto: String, pos: Vector2, tamanho: int, cor: Color) -> Label:

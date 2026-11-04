@@ -1,5 +1,6 @@
 package com.lazersport.dragonbowling;
 
+import android.content.Intent;
 import android.content.res.Resources;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
@@ -7,13 +8,16 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.SystemClock;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowInsets;
 import android.view.WindowManager;
 
 import org.godotengine.godot.FullScreenGodotApp;
+import org.godotengine.godot.Godot;
 
 /**
  * A ATIVIDADE DO DRAGON BOWLING NA TV BOX (no lugar da com.godot.game.GodotApp
@@ -31,11 +35,13 @@ import org.godotengine.godot.FullScreenGodotApp;
  *
  * O JOGO ABRE SOZINHO AO LIGAR (InicioDaTv, o método do Strike Kids): a
  * tela inicial (DragonInicioAtivo), o aviso de "ligou" (DragonLigou) e a
- * volta da espera (ouvirTela). O JOGO NUNCA ABRE JANELA NENHUMA SOZINHO: na
- * máquina só há os botões da Zero Delay e ninguém consegue fechar uma janela
- * do Android. A tela inicial e o "Sobrepor a outros apps" são deixados
- * prontos pelo PC (PREPARAR_TV.bat, adb) ou pelo técnico com o controle
- * remoto, nos ajustes.
+ * volta da espera (ouvirTela). Igual ao Strike Kids: enquanto a TV não abre
+ * o jogo sozinha, o jogo pede ao Android para ser a tela inicial ("Dragon
+ * Bowling" + SEMPRE) uma vez a cada abertura, com o jogo parado; escolhido
+ * uma vez, nunca mais pede. Não pede se o PREPARAR_TV.bat -DevolverTv
+ * desligou a tela inicial do jogo.
+ *
+ * O JOGO NUNCA FICA PARADO NA TELA: o Vigia reinicia o jogo travado.
  *
  * Feito por tools/android/TelaCheia/construir.sh (Java 8, sem Gradle).
  */
@@ -52,6 +58,38 @@ public class TelaCheia extends FullScreenGodotApp {
 			| WindowManager.LayoutParams.FLAG_LAYOUT_IN_OVERSCAN;
 
 	private final Handler relogio = new Handler(Looper.getMainLooper());
+
+	/**
+	 * O pedido da tela inicial (o Strike Kids pede na tela de espera): uma vez
+	 * por abertura do jogo, com o jogo na frente e a placa SOSSEGADA (nenhum
+	 * botão nem sensor há SOSSEGO_MS): nunca no meio de uma partida.
+	 */
+	private static final long SOSSEGO_MS = 20000;
+	private static final long OLHAR_DE_NOVO_MS = 5000;
+	private static boolean telaInicialPedida = false;
+	private long ultimoToque = SystemClock.elapsedRealtime();
+	private final Runnable pedirTelaInicial = new Runnable() {
+		@Override
+		public void run() {
+			if (telaInicialPedida || isFinishing()) {
+				return;
+			}
+			if (SystemClock.elapsedRealtime() - ultimoToque < SOSSEGO_MS || !hasWindowFocus()) {
+				relogio.postDelayed(this, OLHAR_DE_NOVO_MS);
+				return;
+			}
+			telaInicialPedida = true;
+			try {
+				String estado = InicioDaTv.estado(TelaCheia.this);
+				if (!estado.equals("jogo") && InicioDaTv.telaDoJogoLigada(TelaCheia.this)) {
+					Log.i("DragonBowling", "inicio: a TV ainda não abre o jogo (" + estado + "): "
+							+ InicioDaTv.escolher(TelaCheia.this, true));
+				}
+			} catch (Throwable t) {
+				Log.i("DragonBowling", "inicio: tela inicial: " + t);
+			}
+		}
+	};
 
 	/** O estado do "abrir ao ligar" para a tela de configuração (SELECT) do jogo. */
 	private final Runnable gravarEstado = new Runnable() {
@@ -98,9 +136,61 @@ public class TelaCheia extends FullScreenGodotApp {
 	@Override
 	protected void onResume() {
 		super.onResume();
+		Vigia.naFrente(this);
 		telaCheia();
-		// só grava o estado (nenhuma janela): a configuração mostra SIM ou NÃO
+		// (de volta dos ajustes do Android: a configuração já mostra o novo estado)
 		relogio.post(gravarEstado);
+		relogio.removeCallbacks(pedirTelaInicial);
+		if (!telaInicialPedida) {
+			relogio.postDelayed(pedirTelaInicial, OLHAR_DE_NOVO_MS);
+		}
+	}
+
+	@Override
+	protected void onPause() {
+		// antes do Godot parar de desenhar: fora da frente, o vigia não vigia
+		Vigia.foraDaFrente();
+		relogio.removeCallbacks(pedirTelaInicial);
+		super.onPause();
+	}
+
+	@Override
+	public void onDestroy() {
+		Vigia.acabou(this);
+		super.onDestroy();
+	}
+
+	/** Para o Vigia: r só roda quando o Godot desenhar o próximo quadro. */
+	void naFilaDoDesenho(Runnable r) {
+		Godot godot = getGodotFragment();
+		if (godot == null) {
+			r.run();
+			return;
+		}
+		godot.runOnRenderThread(r);
+	}
+
+	/**
+	 * Botão ou sensor da placa (ou o controle remoto): alguém está jogando.
+	 * (Só teclas e botões: um eixo de joystick que treme não pode impedir o
+	 * pedido para sempre - e o jogo não usa o direcional.)
+	 */
+	@Override
+	public boolean dispatchKeyEvent(KeyEvent evento) {
+		ultimoToque = SystemClock.elapsedRealtime();
+		return super.dispatchKeyEvent(evento);
+	}
+
+	@Override
+	public void onActivityResult(int pedido, int resultado, Intent dados) {
+		super.onActivityResult(pedido, resultado, dados);
+		if (pedido == InicioDaTv.PEDIDO_PAPEL) {
+			try {
+				InicioDaTv.depoisDoPapel(this, resultado);
+			} catch (Throwable t) {
+				Log.i("DragonBowling", "inicio: tela inicial: " + t);
+			}
+		}
 	}
 
 	@Override
