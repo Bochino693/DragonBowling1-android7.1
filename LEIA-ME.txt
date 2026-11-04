@@ -88,6 +88,16 @@ se abrir sozinho ao ligar - so pelo adb, e o PREPARAR_TV.bat faz isso.
   ATENCAO: com a tela da TV desligada, NAO desinstale o jogo (a TV ficaria
   sem tela inicial); para trocar de versao, instale por cima. Desinstalou?
   Rode PREPARAR_TV.bat -DevolverTv.
+A TV NAO LE O APK PELO PENDRIVE? Instale pelo PC: com o APK em APK-Pronto
+e a Depuracao USB ligada (passo a acima), o PREPARAR_TV.bat instala pelo
+adb - sem pendrive, sem gerenciador de arquivos e sem "fontes
+desconhecidas" - e ja deixa a TV pronta. Se a TV recusar, ele diz o motivo
+(APK estragado, Play Protect, placa nao ARM, falta de espaco...). Pelo
+pendrive, confira: pendrive em FAT32; o APK copiado inteiro (use "Ejetar"
+no PC antes de tirar); um gerenciador de arquivos (o visualizador de USB da
+TV esconde os .apk) com "Fontes desconhecidas" ligado para ele
+(Configuracoes > Apps (ou Privacidade) > Seguranca e restricoes).
+
 O JOGO NUNCA ABRE JANELA NENHUMA SOZINHO (build 14): na maquina so ha os
 botoes da Zero Delay e ninguem conseguiria fechar uma janela do Android.
 Por isso a tela inicial e feita so pelo PC (PREPARAR_TV.bat, acima); sem

@@ -1238,17 +1238,34 @@ function Ligar-Tv {
         "PC e TV na mesma rede; rode PREPARAR_TV.bat -Ip <IP da TV>.")
 }
 
+# Instala pelo adb: nao depende do pendrive, de gerenciador de arquivos nem
+# de "fontes desconhecidas" na TV (as TVs que "nao leem" o APK pelo pendrive
+# instalam assim). Se recusar, diz o motivo em portugues.
 function Instalar-Na-Tv([string]$Apk) {
     $log = Join-Path $script:Logs "adb-instalar.log"
+    Info "instalando pelo adb (se a TV mostrar o Play Protect, escolha 'Instalar mesmo assim' com o controle remoto)..."
     $cod = Executar $script:Adb @("-s", $script:Serial, "install", "-r", $Apk) -Log $log -LimiteMin 10 -Rotulo "adb"
     $texto = Ler-Log $log
-    if ($texto -match 'Success') { Ok "instalado: $(Split-Path $Apk -Leaf)"; return }
+    if ($texto -match '(?m)^Success') { Ok "instalado: $(Split-Path $Apk -Leaf)"; return }
+    $falha = [Regex]::Match($texto, 'Failure \[[^\]]*\]|INSTALL_[A-Z_]+[^\r\n]*|error: [^\r\n]+').Value
     if ($texto -match 'INSTALL_FAILED_UPDATE_INCOMPATIBLE') {
         throw "a TV tem um Dragon Bowling com outra assinatura (build 10 ou anterior): desinstale-o da TV e rode de novo (os recordes zeram)."
     }
     if ($texto -match 'INSTALL_FAILED_VERSION_DOWNGRADE') { throw "a TV tem um Dragon Bowling MAIS NOVO que este APK: use o APK mais novo." }
     if ($texto -match 'INSUFFICIENT_STORAGE') { throw "falta espaco na MEMORIA INTERNA da TV: apague apps que nao usa e rode de novo." }
-    throw "o adb nao instalou (codigo $cod; veja adb-instalar.log)."
+    if ($texto -match 'INSTALL_PARSE_FAILED|INSTALL_FAILED_INVALID_APK|Failed to parse|not a valid zip|Invalid APK') {
+        throw "o APK em APK-Pronto esta estragado ($falha): gere de novo com o GERAR_APK_AGORA.bat."
+    }
+    if ($texto -match 'NO_MATCHING_ABIS') { throw "a placa da TV nao e ARM ($falha): o jogo tem so os motores ARM de 32 e 64 bits." }
+    if ($texto -match 'INSTALL_FAILED_OLDER_SDK') { throw "o Android da TV e antigo demais ($falha): o jogo precisa do Android 5.0 ou mais novo." }
+    if ($texto -match '(?i)VERIFICATION|Play ?Protect|verif|BLOCKED|developer') {
+        throw ("o Google (Play Protect) barrou a instalacao ($falha). Na TV: Play Store > icone do perfil > Play Protect > " +
+            "engrenagem > DESLIGUE 'Verificar apps com o Play Protect'; rode o PREPARAR_TV.bat de novo e depois ligue de volta.")
+    }
+    if ($texto -match 'USER_RESTRICTED|INSTALL_FAILED_ABORTED') {
+        throw "a TV recusou ou nao confirmou a instalacao ($falha): olhe a tela da TV (Play Protect ou 'Instalar?') e responda com o controle remoto; rode de novo."
+    }
+    throw "o adb nao instalou (codigo $cod; $falha; veja adb-instalar.log)."
 }
 
 # A versao do jogo na TV (versionCode; 0 = nao instalado).
