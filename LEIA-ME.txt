@@ -57,22 +57,37 @@ O mesmo metodo do Strike Kids, para TV Box (Android 7.1) e placa da TV
 3. VOLTA DA ESPERA: desligada pelo CONTROLE, a TV fica so em espera; ao
    religar (10 s ou mais apagada) o jogo reinicia do zero e vem para a
    frente.
-COMO DEIXAR PRONTO - O JEITO GARANTIDO (PC, uma vez por TV):
+COMO DEIXAR PRONTO - O JEITO GARANTIDO (PC, uma vez por TV). NO GOOGLE TV
+E OBRIGATORIO: o Google nao deixa nenhum app trocar a tela do Google TV nem
+se abrir sozinho ao ligar - so pelo adb, e o PREPARAR_TV.bat faz isso.
   a. Na TV: Configuracoes > Sistema > Sobre > clique 7 vezes em "Build do
      SO do Android TV" (ou "Numero da versao") ate aparecer "voce e um
-     desenvolvedor". Volte: Opcoes do desenvolvedor > Depuracao USB
-     LIGADA (e "Depuracao por rede"/"ADB pela rede", se houver).
+     desenvolvedor". Volte: Configuracoes > Sistema > Opcoes do
+     desenvolvedor > Depuracao USB LIGADA (e "Depuracao por rede"/"ADB
+     pela rede", se houver).
   b. Anote o IP da TV: Configuracoes > Rede e Internet > (a rede).
-  c. No PC (mesma rede da TV), com o APK em APK-Pronto: dois cliques em
-     PREPARAR_TV.bat e digite o IP. Na TV, aceite "Permitir depuracao"
-     (marque "Sempre permitir deste computador").
-  d. Ele instala o jogo, poe como TELA INICIAL, permite "Sobrepor a
-     outros apps", confere e diz TV PRONTA (ou o que faltou).
-  e. Se mesmo assim a TV abrir a propria tela ao ligar:
-     PREPARAR_TV.bat -Ip <IP> -SoOJogo (desliga a tela inicial da TV: so
-     sobra o jogo; para religar: adb shell pm enable <o pacote mostrado>).
+  c. No PC (mesma rede da TV): dois cliques em PREPARAR_TV.bat e digite o
+     IP. Na TV, aceite "Permitir depuracao" (marque "Sempre permitir deste
+     computador"). O jogo ja instalado pelo pendrive serve: ele nao
+     reinstala (com o APK em APK-Pronto, instala ou atualiza).
+  d. Ele poe o jogo como TELA INICIAL e DESLIGA as telas da TV (no Google
+     TV: a tela do Google TV e o assistente "setupwraith", que a religaria
+     ao ligar) - so depois de conferir que a tela do jogo esta ligada.
+     Permite "Sobrepor a outros apps", tira o descanso de tela e o
+     "desligar por inatividade", confere e diz TV PRONTA (ou o que faltou).
+  e. Teste: tire a TV da tomada, espere 10 s e ligue: abre SO o jogo.
+  f. Na TV, confira tambem o que ela faz quando a energia volta (nome muda
+     de marca para marca): Configuracoes > Sistema > Energia (e energia) >
+     "Comportamento ao ligar" = TELA INICIAL (nao "ultima entrada"/HDMI) e,
+     se existir, "Ligar quando a energia voltar"/"Modo de energia" = LIGADA.
+  Para a TV voltar a ser TV: PREPARAR_TV.bat -DevolverTv (religa as telas
+  da TV; o jogo continua instalado). PREPARAR_TV.bat -ManterTelaDaTv nao
+  desliga a tela da TV (no Google TV, assim o jogo nao abre sozinho).
   Gerando o APK no mesmo PC: GERAR_APK_AGORA.bat -Instalar -Ip <IP> faz
   tudo isso depois de gerar.
+  ATENCAO: com a tela da TV desligada, NAO desinstale o jogo (a TV ficaria
+  sem tela inicial); para trocar de versao, instale por cima. Desinstalou?
+  Rode PREPARAR_TV.bat -DevolverTv.
 O JOGO NUNCA ABRE JANELA NENHUMA SOZINHO (build 14): na maquina so ha os
 botoes da Zero Delay e ninguem conseguiria fechar uma janela do Android.
 Por isso a tela inicial e feita so pelo PC (PREPARAR_TV.bat, acima); sem
