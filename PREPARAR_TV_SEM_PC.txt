@@ -1,0 +1,31 @@
+DRAGON BOWLING - PREPARAR A TV SEM PC (pelo celular Android)
+============================================================
+O mesmo do PREPARAR_TV.bat, por um app de adb no celular Android (ex.:
+"Bugjaeger" ou "Remote ADB Shell", na Play Store do celular). Nao precisa
+de cabo: celular e TV na mesma rede Wi-Fi. iPhone nao tem esse tipo de app.
+
+1. Na TV: Configuracoes > Sistema > Sobre > clique 7 vezes em "Build do SO
+   do Android TV". Depois: Configuracoes > Sistema > Opcoes do
+   desenvolvedor > Depuracao USB LIGADA (e "Depuracao por rede" ou
+   "Depuracao por Wi-Fi", se houver). Anote o IP: Configuracoes > Rede e
+   Internet > (a rede).
+2. O jogo ja instalado na TV e aberto uma vez.
+3. No app do celular: conecte no IP da TV (porta 5555; com "Depuracao por
+   Wi-Fi", use o IP:porta e o codigo da tela "Parear"). Na TV, aceite
+   "Permitir depuracao" e marque "Sempre permitir".
+4. No terminal (shell) do app, cole a linha abaixo INTEIRA e envie. No fim
+   ela escreve TV PRONTA. Se escrever "A TELA DO JOGO NAO LIGOU", nada foi
+   desligado: confira se o jogo (build 14 ou mais nova) esta instalado.
+
+PREPARAR (o jogo vira a tela inicial, a tela do Google TV sai, TV sempre
+ligada):
+
+P=com.lazersport.dragonbowling.s905l; A=$P/com.lazersport.dragonbowling.DragonInicioAtivo; pm enable $A; cmd package set-home-activity $A; cmd role add-role-holder android.app.role.HOME $P; appops set $P SYSTEM_ALERT_WINDOW allow; settings put secure screensaver_enabled 0; settings put secure sleep_timeout -1; settings put secure attentive_timeout -1; if cmd package query-activities -a android.intent.action.MAIN -c android.intent.category.HOME | grep -q DragonInicioAtivo; then for L in com.google.android.apps.tv.launcherx com.google.android.tungsten.setupwraith; do pm disable-user --user 0 $L; done; echo TV PRONTA; else echo A TELA DO JOGO NAO LIGOU - NADA FOI DESLIGADO; fi; monkey -p $P -c android.intent.category.LAUNCHER 1
+
+DEVOLVER (a TV volta a ser TV; o jogo continua instalado):
+
+for L in com.google.android.apps.tv.launcherx com.google.android.tungsten.setupwraith; do pm enable $L; done; pm disable com.lazersport.dragonbowling.s905l/com.lazersport.dragonbowling.DragonInicioAtivo
+
+Depois de preparar: tire a TV da tomada, espere 10 s e ligue - abre so o
+jogo. Com a tela do Google TV desligada, NAO desinstale o jogo (a TV ficaria
+sem tela inicial): para atualizar, instale por cima.

@@ -88,6 +88,17 @@ se abrir sozinho ao ligar - so pelo adb, e o PREPARAR_TV.bat faz isso.
   ATENCAO: com a tela da TV desligada, NAO desinstale o jogo (a TV ficaria
   sem tela inicial); para trocar de versao, instale por cima. Desinstalou?
   Rode PREPARAR_TV.bat -DevolverTv.
+SEM PC (a TV ja montada na maquina):
+  - INSTALAR: na Play Store da TV, instale um gerenciador de arquivos (ex.:
+    "X-plore File Manager") - o visualizador de USB da TV esconde os .apk.
+    Libere-o em Configuracoes > Apps (ou Privacidade) > Seguranca e
+    restricoes > Fontes desconhecidas. Pendrive em FAT32, APK copiado
+    inteiro ("Ejetar" no PC). Abra o APK pelo gerenciador > Instalar.
+    Sem pendrive: o app "Downloader" (Play Store da TV) baixa o APK de um
+    link (Dropbox com ?dl=1, Google Drive...) e instala.
+  - SO O JOGO AO LIGAR: pelo celular Android, com um app de adb - veja
+    PREPARAR_TV_SEM_PC.txt (uma linha para colar). Ou qualquer PC na mesma
+    rede Wi-Fi da TV, mesmo longe da maquina: o adb e pela rede, sem cabo.
 A TV NAO LE O APK PELO PENDRIVE? Instale pelo PC: com o APK em APK-Pronto
 e a Depuracao USB ligada (passo a acima), o PREPARAR_TV.bat instala pelo
 adb - sem pendrive, sem gerenciador de arquivos e sem "fontes
