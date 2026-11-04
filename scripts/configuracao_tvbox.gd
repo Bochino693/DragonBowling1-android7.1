@@ -106,7 +106,13 @@ func _abre_ao_ligar(fonte: Font) -> void:
 		dica = "MAIS GARANTIDO: HOME > DRAGON BOWLING > SEMPRE  ·  " + android
 	else:
 		texto = "ABRE SOZINHO AO LIGAR: NÃO  ·  " + android
-		dica = "DEIXE O JOGO PARADO 20 s E ESCOLHA DRAGON BOWLING > SEMPRE (OU HOME)"
+		var adb: String = estado.get("adb", "")
+		if adb == "sem_permissao":
+			dica = "ACEITE \"PERMITIR DEPURAÇÃO\" NA TV (MARQUE SEMPRE) - DESLIGUE E LIGUE"
+		elif adb == "adb_desligado" or adb == "":
+			dica = "LIGUE A DEPURAÇÃO USB (OPÇÕES DO DESENVOLVEDOR) E ABRA O JOGO"
+		else:
+			dica = "DEIXE O JOGO PARADO 20 s E ESCOLHA DRAGON BOWLING > SEMPRE (OU HOME)"
 		cor = Color(1.0, 0.45, 0.35)
 	_rotulo(fonte, texto, Vector2(0, 1180), 26, cor)
 	if dica != "":

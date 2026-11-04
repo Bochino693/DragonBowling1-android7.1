@@ -80,8 +80,40 @@ public class TelaCheia extends FullScreenGodotApp {
 			}
 			telaInicialPedida = true;
 			try {
+				if (InicioDaTv.estado(TelaCheia.this).equals("jogo") || !InicioDaTv.telaDoJogoLigada(TelaCheia.this)) {
+					return;
+				}
+			} catch (Throwable t) {
+				Log.i("DragonBowling", "inicio: tela inicial: " + t);
+				return;
+			}
+			// 1o o jogo se prepara sozinho pelo adb da TV (Depuração USB ligada;
+			// desligada, nada aparece); se ainda faltar, pede como o Strike Kids
+			final android.content.Context app = getApplicationContext();
+			new Thread(new Runnable() {
+				@Override
+				public void run() {
+					String r = "erro";
+					try {
+						r = InicioDaTv.prepararPeloAdb(app);
+					} catch (Throwable t) {
+						Log.i("DragonBowling", "inicio: pelo adb: " + t);
+					}
+					Log.i("DragonBowling", "inicio: pelo adb: " + r);
+					relogio.post(depoisDoAdb);
+				}
+			}, "DragonAdb").start();
+		}
+	};
+
+	/** Depois do adb da TV: se a TV ainda não abre o jogo, o pedido do Strike Kids. */
+	private final Runnable depoisDoAdb = new Runnable() {
+		@Override
+		public void run() {
+			try {
+				InicioDaTv.gravarEstado(TelaCheia.this);
 				String estado = InicioDaTv.estado(TelaCheia.this);
-				if (!estado.equals("jogo") && InicioDaTv.telaDoJogoLigada(TelaCheia.this)) {
+				if (!isFinishing() && !estado.equals("jogo") && InicioDaTv.telaDoJogoLigada(TelaCheia.this)) {
 					Log.i("DragonBowling", "inicio: a TV ainda não abre o jogo (" + estado + "): "
 							+ InicioDaTv.escolher(TelaCheia.this, true));
 				}

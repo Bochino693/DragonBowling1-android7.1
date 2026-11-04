@@ -12,13 +12,17 @@ ninguem mexer. Este checklist garante isso. Faca na oficina, antes de levar.
     controle todo dia.
 
 2. INSTALACAO (uma vez por TV)
+[ ] Opcoes do desenvolvedor: Configuracoes > Sistema > Sobre > 7 cliques
+    em "Build do SO do Android TV"; depois Opcoes do desenvolvedor >
+    Depuracao USB LIGADA.
 [ ] Instale o APK: pendrive FAT32 + gerenciador de arquivos da Play Store
     da TV (o visualizador de USB da TV esconde os .apk), ou pelo PC com o
-    PREPARAR_TV.bat (veja o LEIA-ME).
-[ ] Abra o jogo pela lista de apps e deixe parado uns 20 s. Quando o
-    Android perguntar, escolha DRAGON BOWLING e SEMPRE (ou aceite "Definir
-    como app de tela inicial"). Google TV que nao pergunta: PREPARAR_TV.bat
-    (PC) ou PREPARAR_TV_SEM_PC.txt (celular Android).
+    PREPARAR_TV.bat. O Play Protect barrou ("desenvolvedor nao
+    verificado")? Veja no LEIA-ME "INSTALAR NA TV GOOGLE".
+[ ] Abra o jogo pela lista de apps e deixe parado uns 20 s: ele se prepara
+    sozinho. Quando a TV perguntar "Permitir depuracao USB?", marque
+    "Sempre permitir" e OK. (Sem a Depuracao USB ele pede "Dragon Bowling
+    / Sempre": escolha.)
 [ ] SELECT (configuracao): a linha "ABRE SOZINHO AO LIGAR" diz SIM.
 [ ] Ainda no SELECT: aperte cada sensor e o START/moedeiro; "SINAL
     RECEBIDO" mostra o botao certo (montagem: docs\ZERO_DELAY_MONTAGEM.png).

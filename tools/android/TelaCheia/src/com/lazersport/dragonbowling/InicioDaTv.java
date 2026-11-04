@@ -24,6 +24,14 @@ import org.godotengine.godot.utils.ProcessPhoenix;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.RandomAccessFile;
+import java.security.KeyFactory;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.spec.PKCS8EncodedKeySpec;
+import java.security.spec.X509EncodedKeySpec;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -49,6 +57,10 @@ import java.util.List;
  *    espera. Ligada na tomada, DragonLigou também abre o jogo.
  * 3. SAÍDA DO OPERADOR: sairParaTv() abre a tela inicial da própria TV (HOME
  *    5 vezes seguidas - pediuParaSair()).
+ * 4. O JOGO SE PREPARA SOZINHO (a mais que o Strike Kids, para o Google TV,
+ *    que não deixa trocar a tela inicial): com a Depuração USB ligada, o
+ *    jogo entra no adb da própria TV (AdbDaTv) e faz o mesmo do
+ *    PREPARAR_TV.bat - prepararPeloAdb(). Desligada, nada aparece.
  */
 final class InicioDaTv {
 
@@ -207,6 +219,142 @@ final class InicioDaTv {
 		return "";
 	}
 
+	// ------------------------------------------------------------ pelo adb da própria TV
+	private static final int PORTA_ADB = 5555;
+	private static final String DESLIGADAS = "/data/local/tmp/dragonbowling_telas_desligadas.txt";
+	private static final String[] TELAS_DO_GOOGLE = {"com.google.android.apps.tv.launcherx",
+			"com.google.android.tungsten.setupwraith", "com.google.android.tvlauncher"};
+
+	/**
+	 * O JOGO SE PREPARA SOZINHO: com a Depuração USB ligada (Opções do
+	 * desenvolvedor), entra no adb da própria TV (AdbDaTv) e faz o mesmo do
+	 * PREPARAR_TV.bat - a tela inicial do jogo ligada e escolhida, as telas da
+	 * TV desligadas (só depois de conferir a do jogo), "Sobrepor" permitido e
+	 * TV sempre ligada. A TV pergunta "Permitir depuração?" uma vez (no
+	 * máximo uma vez a cada vez que a TV liga); com "Sempre permitir", nunca
+	 * mais. Devolve: "pronta", "incompleta", "adb_desligado" (nada aparece),
+	 * "sem_permissao", "devolvida" (o -DevolverTv desligou a tela do jogo)
+	 * ou "erro: ...". Demorado: nunca na linha da tela.
+	 */
+	static String prepararPeloAdb(Context c) {
+		String r = prepararPeloAdbSemGuardar(c);
+		c.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putString("adb", r.startsWith("erro") ? "erro" : r).commit();
+		return r;
+	}
+
+	private static String prepararPeloAdbSemGuardar(Context c) {
+		if (!telaDoJogoLigada(c)) {
+			return "devolvida";
+		}
+		AdbDaTv adb;
+		try {
+			adb = AdbDaTv.conectar("127.0.0.1", PORTA_ADB, 1500);
+		} catch (IOException e) {
+			return "adb_desligado";
+		}
+		try {
+			SharedPreferences p = c.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+			long ligou = ligouEm(c);
+			boolean podePerguntar = p.getLong("adb_perguntou", Long.MIN_VALUE) != ligou;
+			if (podePerguntar) {
+				p.edit().putLong("adb_perguntou", ligou).commit();
+			}
+			if (!adb.entrar(chaveDoJogo(c), "DragonBowling@tv", podePerguntar, 5000, 120000)) {
+				return "sem_permissao";
+			}
+			String saida = adb.shell(comandoPreparar(c), 60000);
+			Log.i(TAG, "inicio: pelo adb: " + saida.trim().replace('\n', ' '));
+			return saida.contains("TV_PRONTA") ? "pronta" : "incompleta";
+		} catch (Throwable t) {
+			Log.i(TAG, "inicio: pelo adb: " + t);
+			return "erro: " + t;
+		} finally {
+			adb.close();
+		}
+	}
+
+	/** Um número que muda a cada vez que a TV liga (para perguntar no máximo uma vez). */
+	private static long ligouEm(Context c) {
+		try {
+			int vezes = Settings.Global.getInt(c.getContentResolver(), "boot_count", -1);
+			if (vezes >= 0) {
+				return vezes;
+			}
+		} catch (Throwable ignored) {
+		}
+		return (System.currentTimeMillis() - SystemClock.elapsedRealtime()) / 600000L;
+	}
+
+	/** A chave do jogo para o adb da TV: criada uma vez e guardada no jogo. */
+	private static KeyPair chaveDoJogo(Context c) throws Exception {
+		File priv = new File(c.getFilesDir(), "adb_chave.pk8");
+		File pub = new File(c.getFilesDir(), "adb_chave.pub");
+		KeyFactory kf = KeyFactory.getInstance("RSA");
+		if (priv.exists() && pub.exists()) {
+			try {
+				return new KeyPair(kf.generatePublic(new X509EncodedKeySpec(lerTudo(pub))),
+						kf.generatePrivate(new PKCS8EncodedKeySpec(lerTudo(priv))));
+			} catch (Throwable estragada) {
+				Log.i(TAG, "inicio: chave do adb estragada: nova");
+			}
+		}
+		KeyPairGenerator g = KeyPairGenerator.getInstance("RSA");
+		g.initialize(2048);
+		KeyPair k = g.generateKeyPair();
+		gravarTudo(priv, k.getPrivate().getEncoded());
+		gravarTudo(pub, k.getPublic().getEncoded());
+		return k;
+	}
+
+	private static byte[] lerTudo(File f) throws IOException {
+		RandomAccessFile r = new RandomAccessFile(f, "r");
+		try {
+			byte[] b = new byte[(int) r.length()];
+			r.readFully(b);
+			return b;
+		} finally {
+			r.close();
+		}
+	}
+
+	private static void gravarTudo(File f, byte[] b) throws IOException {
+		FileOutputStream o = new FileOutputStream(f);
+		try {
+			o.write(b);
+		} finally {
+			o.close();
+		}
+	}
+
+	/**
+	 * As telas iniciais da TV que saem: as que o Android mostra (menos o jogo,
+	 * os Ajustes e as de fundo, com prioridade negativa) e as do Google TV.
+	 */
+	static List<String> outrasTelasIniciais(Context c) {
+		List<String> lista = new ArrayList<String>();
+		for (ResolveInfo r : c.getPackageManager().queryIntentActivities(home(), PackageManager.MATCH_DEFAULT_ONLY)) {
+			if (r.activityInfo == null || r.priority < 0) {
+				continue;
+			}
+			String p = r.activityInfo.packageName;
+			if (p.equals(c.getPackageName()) || p.equals("android") || p.matches("com\\.android\\.(tv\\.)?settings") || lista.contains(p)) {
+				continue;
+			}
+			lista.add(p);
+		}
+		for (String g : TELAS_DO_GOOGLE) {
+			if (!lista.contains(g)) {
+				lista.add(g);
+			}
+		}
+		return lista;
+	}
+
+	/** Os comandos do PREPARAR_TV.bat para esta TV (AdbDaTv.comandoPreparar). */
+	static String comandoPreparar(Context c) {
+		return AdbDaTv.comandoPreparar(c.getPackageName(), DragonInicioAtivo.class.getName(), outrasTelasIniciais(c), DESLIGADAS);
+	}
+
 	// ------------------------------------------------------------ Android 10+
 	/**
 	 * ANDROID 10 OU MAIS NOVO (as TVs com Android TV 10 a 14): o Android não
@@ -237,7 +385,8 @@ final class InicioDaTv {
 		String sobrepor = Build.VERSION.SDK_INT < 29 ? "nao_precisa" : (podeAbrirDeFundo(c) ? "sim" : "nao");
 		String texto = "tela_inicial=" + estado(c).replace('\n', ' ') + "\nsobrepor=" + sobrepor
 				+ "\nandroid=" + Build.VERSION.RELEASE + "\nsdk=" + Build.VERSION.SDK_INT
-				+ "\nvigia=" + Vigia.reinicios(c) + "\n";
+				+ "\nvigia=" + Vigia.reinicios(c)
+				+ "\nadb=" + c.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString("adb", "") + "\n";
 		File arquivo = new File(c.getFilesDir(), "inicio_tv.cfg");
 		FileOutputStream saida = null;
 		try {

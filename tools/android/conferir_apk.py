@@ -31,6 +31,7 @@ INICIO = 'com.lazersport.dragonbowling.DragonInicioAtivo'
 LIGOU = 'com.lazersport.dragonbowling.DragonLigou'
 PERMISSAO_LIGOU = 'android.permission.RECEIVE_BOOT_COMPLETED'
 PERMISSAO_SOBREPOR = 'android.permission.SYSTEM_ALERT_WINDOW'
+PERMISSAO_REDE = 'android.permission.INTERNET'
 ABIS = ['arm64-v8a', 'armeabi-v7a']
 CATEGORIAS = ['android.intent.category.LAUNCHER', 'android.intent.category.LEANBACK_LAUNCHER']
 
@@ -66,7 +67,7 @@ if CERTIFICADO:
 # deixa esse aviso abrir o jogo. O jogo usa só a placa Zero Delay
 perms = sorted(a.get_permissions())
 print('permissões:', perms)
-checar(perms == sorted([PERMISSAO_LIGOU, PERMISSAO_SOBREPOR]), 'só RECEIVE_BOOT_COMPLETED e SYSTEM_ALERT_WINDOW')
+checar(perms == sorted([PERMISSAO_LIGOU, PERMISSAO_SOBREPOR, PERMISSAO_REDE]), 'só INTERNET (adb da própria TV), RECEIVE_BOOT_COMPLETED e SYSTEM_ALERT_WINDOW')
 # o jogo SÓ na memória interna (nunca num pendrive ou cartão, de onde sumiria)
 local = m.get(NS + 'installLocation')
 checar(local in ('1', 'internalOnly'), 'só na memória interna (installLocation = %s)' % local)
@@ -164,7 +165,7 @@ if tela is not None:
 dex2 = a.get_file('classes2.dex')
 checar(b'Landroid/app/role/RoleManager;' in dex2, 'classes2.dex pede a tela inicial como o Strike Kids (papel HOME)')
 checar(b'android.settings.action.MANAGE_OVERLAY_PERMISSION' not in dex2, 'classes2.dex nunca abre a tela "Sobrepor a outros apps"')
-for nome in ('DragonInicioAtivo', 'DragonLigou', 'InicioDaTv', 'Vigia'):
+for nome in ('DragonInicioAtivo', 'DragonLigou', 'InicioDaTv', 'Vigia', 'AdbDaTv'):
     checar('Lcom/lazersport/dragonbowling/%s;' % nome in classes2, 'classes2.dex tem a ' + nome)
 checar(not any(k.startswith('Landroidx/') for k in classes2), 'classes2.dex sem androidx (o esqueleto não vazou)')
 outros = [n for n in arquivos if n.endswith('.dex') and n not in ('classes.dex', 'classes2.dex')]
