@@ -33,6 +33,9 @@ PERMISSAO_LIGOU = 'android.permission.RECEIVE_BOOT_COMPLETED'
 PERMISSAO_SOBREPOR = 'android.permission.SYSTEM_ALERT_WINDOW'
 PERMISSAO_REDE = 'android.permission.INTERNET'
 PERMISSAO_ACENDER = 'android.permission.WAKE_LOCK'
+PERMISSAO_GUARDA = 'android.permission.FOREGROUND_SERVICE'
+PERMISSAO_GUARDA_TIPO = 'android.permission.FOREGROUND_SERVICE_SPECIAL_USE'
+GUARDA = 'com.lazersport.dragonbowling.DragonSempre'
 ABIS = ['arm64-v8a', 'armeabi-v7a']
 CATEGORIAS = ['android.intent.category.LAUNCHER', 'android.intent.category.LEANBACK_LAUNCHER']
 
@@ -68,8 +71,12 @@ if CERTIFICADO:
 # deixa esse aviso abrir o jogo. O jogo usa só a placa Zero Delay
 perms = sorted(a.get_permissions())
 print('permissões:', perms)
-checar(perms == sorted([PERMISSAO_LIGOU, PERMISSAO_SOBREPOR, PERMISSAO_REDE, PERMISSAO_ACENDER]),
-       'só INTERNET (adb da própria TV), RECEIVE_BOOT_COMPLETED, SYSTEM_ALERT_WINDOW e WAKE_LOCK')
+checar(perms == sorted([PERMISSAO_LIGOU, PERMISSAO_SOBREPOR, PERMISSAO_REDE, PERMISSAO_ACENDER, PERMISSAO_GUARDA, PERMISSAO_GUARDA_TIPO]),
+       'só INTERNET (adb da própria TV), RECEIVE_BOOT_COMPLETED, SYSTEM_ALERT_WINDOW, WAKE_LOCK e FOREGROUND_SERVICE(_SPECIAL_USE)')
+# o guarda: serviço em primeiro plano (uso especial: quiosque)
+guarda = [sv for sv in app.findall('service') if sv.get(NS + 'name') == GUARDA]
+checar(len(guarda) == 1 and guarda[0].get(NS + 'foregroundServiceType') in ('specialUse', '0x40000000', '1073741824'),
+       'guarda DragonSempre em primeiro plano (specialUse: %s)' % (guarda[0].get(NS + 'foregroundServiceType') if guarda else '-'))
 # o jogo SÓ na memória interna (nunca num pendrive ou cartão, de onde sumiria)
 local = m.get(NS + 'installLocation')
 checar(local in ('1', 'internalOnly'), 'só na memória interna (installLocation = %s)' % local)
@@ -167,7 +174,7 @@ if tela is not None:
 dex2 = a.get_file('classes2.dex')
 checar(b'Landroid/app/role/RoleManager;' in dex2, 'classes2.dex pede a tela inicial como o Strike Kids (papel HOME)')
 checar(b'android.settings.action.MANAGE_OVERLAY_PERMISSION' in dex2, 'classes2.dex pede "Sobrepor a outros apps" como um auto start')
-for nome in ('DragonInicioAtivo', 'DragonLigou', 'InicioDaTv', 'Vigia', 'AdbDaTv'):
+for nome in ('DragonInicioAtivo', 'DragonLigou', 'InicioDaTv', 'Vigia', 'AdbDaTv', 'DragonSempre'):
     checar('Lcom/lazersport/dragonbowling/%s;' % nome in classes2, 'classes2.dex tem a ' + nome)
 checar(not any(k.startswith('Landroidx/') for k in classes2), 'classes2.dex sem androidx (o esqueleto não vazou)')
 outros = [n for n in arquivos if n.endswith('.dex') and n not in ('classes.dex', 'classes2.dex')]

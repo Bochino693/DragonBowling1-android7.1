@@ -53,6 +53,10 @@ PERMISSAO_SOBREPOR = "android.permission.SYSTEM_ALERT_WINDOW"
 PERMISSAO_REDE = "android.permission.INTERNET"
 # acender a tela da TV ao ligar (o Android ligou com a tela apagada)
 PERMISSAO_ACENDER = "android.permission.WAKE_LOCK"
+# o guarda (DragonSempre): serviço em primeiro plano que mantém o jogo na tela
+PERMISSAO_GUARDA = "android.permission.FOREGROUND_SERVICE"
+PERMISSAO_GUARDA_TIPO = "android.permission.FOREGROUND_SERVICE_SPECIAL_USE"
+GUARDA = "com.lazersport.dragonbowling.DragonSempre"
 
 
 def trocar_uma(texto, velho, novo, nome):
@@ -77,12 +81,15 @@ def injetar(manifesto):
     <uses-permission android:name="%s"/>
     <uses-permission android:name="%s"/>
     <uses-permission android:name="%s"/>
+    <uses-permission android:name="%s"/>
+    <uses-permission android:name="%s"/>
     <queries>
         <intent>
             <action android:name="android.intent.action.MAIN"/>
             <category android:name="android.intent.category.HOME"/>
         </intent>
-    </queries>''' % (PERMISSAO_LIGOU, PERMISSAO_SOBREPOR, PERMISSAO_REDE, PERMISSAO_ACENDER), "glEsVersion")
+    </queries>''' % (PERMISSAO_LIGOU, PERMISSAO_SOBREPOR, PERMISSAO_REDE, PERMISSAO_ACENDER,
+                    PERMISSAO_GUARDA, PERMISSAO_GUARDA_TIPO), "glEsVersion")
     # o jogo SÓ na memória interna: nunca vai para um pendrive ou cartão
     # (formatado como memória da TV) - tirado o pendrive, o jogo sumiria
     s = trocar_uma(s, 'android:installLocation="auto"', 'android:installLocation="internalOnly"', "installLocation")
@@ -107,7 +114,10 @@ def injetar(manifesto):
                 <action android:name="android.intent.action.QUICKBOOT_POWERON"/>
             </intent-filter>
         </receiver>
-    </application>''' % (INICIO, LIGOU), "fim do application")
+        <service android:exported="false" android:foregroundServiceType="specialUse" android:name="%s">
+            <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE" android:value="quiosque: mantem o jogo da maquina de arcade na tela da TV"/>
+        </service>
+    </application>''' % (INICIO, LIGOU, GUARDA), "fim do application")
     open(manifesto, "w", encoding="utf-8").write(s)
 
 

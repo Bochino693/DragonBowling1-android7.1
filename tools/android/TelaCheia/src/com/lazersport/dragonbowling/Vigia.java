@@ -69,6 +69,11 @@ final class Vigia {
 		comecar(t.getApplicationContext());
 	}
 
+	/** O jogo está na frente (para o guarda, DragonSempre). */
+	static boolean estaNaFrente() {
+		return naFrente;
+	}
+
 	/** O jogo saiu da frente (onPause, antes de o Godot parar de desenhar). */
 	static void foraDaFrente() {
 		naFrente = false;
