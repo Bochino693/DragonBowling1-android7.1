@@ -16,8 +16,9 @@ Dragon Bowling da TV Box - o mesmo que a Build 10 montava com o Gradle:
   - o jogo SÓ na memória interna (installLocation internalOnly): nunca vai
     para um pendrive ou cartão, de onde sumiria.
 
-Sem plugin. Três permissões, que o Android não pergunta na instalação: a
-INTERNET (só para falar com o adb da própria TV: o jogo se prepara sozinho),
+Sem plugin. Quatro permissões, que o Android não pergunta na instalação: a
+WAKE_LOCK (acender a tela da TV ao ligar), a INTERNET (só para falar com o
+adb da própria TV: o jogo se prepara sozinho),
 a RECEIVE_BOOT_COMPLETED (dada sozinha) e a SYSTEM_ALERT_WINDOW ("Sobrepor a
 outros apps": no Android 10+ é o que deixa o aviso de "ligou" abrir o
 jogo; o PREPARAR_TV.bat permite pelo adb - o jogo nunca abre essa tela).
@@ -50,6 +51,8 @@ PERMISSAO_LIGOU = "android.permission.RECEIVE_BOOT_COMPLETED"
 PERMISSAO_SOBREPOR = "android.permission.SYSTEM_ALERT_WINDOW"
 # o jogo fala com o adb da própria TV (127.0.0.1:5555) para se preparar sozinho
 PERMISSAO_REDE = "android.permission.INTERNET"
+# acender a tela da TV ao ligar (o Android ligou com a tela apagada)
+PERMISSAO_ACENDER = "android.permission.WAKE_LOCK"
 
 
 def trocar_uma(texto, velho, novo, nome):
@@ -73,12 +76,13 @@ def injetar(manifesto):
     <uses-permission android:name="%s"/>
     <uses-permission android:name="%s"/>
     <uses-permission android:name="%s"/>
+    <uses-permission android:name="%s"/>
     <queries>
         <intent>
             <action android:name="android.intent.action.MAIN"/>
             <category android:name="android.intent.category.HOME"/>
         </intent>
-    </queries>''' % (PERMISSAO_LIGOU, PERMISSAO_SOBREPOR, PERMISSAO_REDE), "glEsVersion")
+    </queries>''' % (PERMISSAO_LIGOU, PERMISSAO_SOBREPOR, PERMISSAO_REDE, PERMISSAO_ACENDER), "glEsVersion")
     # o jogo SÓ na memória interna: nunca vai para um pendrive ou cartão
     # (formatado como memória da TV) - tirado o pendrive, o jogo sumiria
     s = trocar_uma(s, 'android:installLocation="auto"', 'android:installLocation="internalOnly"', "installLocation")

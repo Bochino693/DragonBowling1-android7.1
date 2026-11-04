@@ -1,4 +1,4 @@
-DRAGON BOWLING - TV BOX MALI-450 (ANDROID 7.1) - BUILD 17
+DRAGON BOWLING - TV BOX MALI-450 (ANDROID 7.1) - BUILD 18
 =========================================================
 
 PARA QUAL MAQUINA E ESTA VERSAO
@@ -85,31 +85,50 @@ de "desenvolvedor verificado"; os outros o Play Protect barra. Saidas:
      e a senha dela estao neste repositorio publico; antes de registrar,
      tire-as do repositorio (quem tiver a chave assina APKs em seu nome).
 
-ABRE SOZINHO AO LIGAR (BUILD 17 - O JOGO SE PREPARA SOZINHO)
------------------------------------------------------------
+ABRE SOZINHO AO LIGAR (BUILD 18 - COMO UM APP DE AUTO START, SEM O APP)
+-----------------------------------------------------------------------
+O jogo faz sozinho o que um app de auto start (Launch on Boot) faz: quando
+a TV termina de ligar, ele acende a tela, abre o jogo e abre de novo aos 5
+e aos 15 s (se a tela da TV aparecer por cima). Igual ao auto start, no
+Android 10+ (Google TV) ele precisa do "Sobrepor a outros apps", que ele
+mesmo pede na instalacao.
 COMO DEIXAR PRONTO (uma vez por TV, com o controle remoto):
-  1. Opcoes do desenvolvedor: Configuracoes > Sistema > Sobre > clique 7
-     vezes em "Build do SO do Android TV". Depois: Configuracoes > Sistema
-     > Opcoes do desenvolvedor > Depuracao USB LIGADA.
-  2. Instale o APK (por cima do antigo: as configuracoes ficam) e abra o
+  1. Instale o APK (por cima do antigo: as configuracoes ficam) e abra o
      jogo pela lista de apps.
-  3. Deixe o jogo parado uns 20 s: ELE SE PREPARA SOZINHO. A TV pergunta
-     "Permitir depuracao USB?": marque "Sempre permitir deste
-     computador" e OK. O jogo vira a UNICA tela inicial (a do Google TV
-     sai, so depois de conferir a do jogo), a TV fica sempre ligada (sem
-     descanso de tela e sem desligar por inatividade) e o "Sobrepor"
-     fica permitido. E o mesmo do PREPARAR_TV.bat, feito pelo proprio
-     jogo, pelo adb da propria TV.
-     Sem a Depuracao USB, o jogo pede como o Strike Kids: "Definir Dragon
-     Bowling como app de tela inicial?" (ACEITE), ou "Sempre / So uma vez"
-     (DRAGON BOWLING e SEMPRE), ou os ajustes "Tela inicial" (escolha
-     DRAGON BOWLING). Nao apareceu nada? HOME > DRAGON BOWLING > SEMPRE.
-  4. Confira: SELECT (configuracao) mostra "ABRE SOZINHO AO LIGAR: SIM
-     (TELA INICIAL)" - ou o que falta. Tire a TV da tomada, espere 10 s e
-     ligue: abre so o jogo.
-  Feito uma vez, NUNCA MAIS pergunta: o cliente nunca ve janela. O jogo
-  nunca abre a tela "Sobrepor a outros apps". A Depuracao USB pode
-  continuar ligada (o PREPARAR_TV.bat -DevolverTv precisa dela).
+  2. Deixe o jogo parado uns 20 s: ele abre a tela "Sobrepor a outros
+     apps" com o aviso "deixe DRAGON BOWLING PERMITIDO". Ligue o Dragon
+     Bowling e aperte VOLTAR. Pronto: nunca mais pede.
+  3. DESINSTALE (ou desligue) o app de auto start: dois abrindo o jogo ao
+     mesmo tempo atrapalham.
+  4. Confira: SELECT mostra "ABRE SOZINHO AO LIGAR: SIM". Tire a TV da
+     tomada, espere 10 s e ligue: depois do Android, o jogo abre sozinho.
+  SO O JOGO, SEM A TELA DO GOOGLE TV APARECER ANTES (opcional): ligue a
+  Depuracao USB (Configuracoes > Sistema > Sobre > 7 cliques em "Build do
+  SO do Android TV"; Opcoes do desenvolvedor > Depuracao USB) e abra o
+  jogo: ele entra no adb da propria TV (aceite "Permitir depuracao" /
+  Sempre) e vira a UNICA tela inicial; ou o PREPARAR_TV.bat pelo PC.
+  TV Box Android 7.1: nada a fazer (o aviso de "ligou" ja abre o jogo); o
+  jogo ainda pede, como o Strike Kids, para ser a tela inicial.
+
+A TV LIGAR SOZINHA QUANDO A ENERGIA VOLTA (sem o controle)
+---------------------------------------------------------
+Com a TV desligada de verdade (so a luz vermelha), o Android nao roda:
+nenhum app consegue liga-la - e um ajuste da propria TV. A TV da maquina e
+uma Skyworth SWTV-24SA-FHD (Google TV, Android TV 14). Teste e ajuste:
+  1. Tire a TV da tomada, espere 10 s e ligue SEM tocar no controle.
+     Acendeu? Pronto (o jogo abre sozinho em seguida).
+  2. Ficou na luz vermelha? Procure, em Configuracoes > Sistema > Energia
+     (e energia) e em Configuracoes da TV: "Comportamento ao ligar",
+     "Ligar ao conectar na energia", "Modo de energia ao ligar"/"Power on
+     mode" = LIGADA (ou "ultimo estado") e teste de novo; teste tambem com
+     "Inicializacao rapida"/"Fast boot" ligada e desligada.
+  3. Se o Android ligar com a tela apagada (placa ligada, painel apagado),
+     o jogo ACENDE a tela sozinho (build 18).
+  4. Se nada disso existir na TV: o Arduino da maquina pode ligar a TV
+     como o controle remoto (um LED infravermelho manda o "ligar" quando a
+     maquina liga) - peca essa versao do Arduino - ou use uma TV que
+     tenha o ajuste (faca o teste do item 1 antes de comprar).
+
 O jogo abre sozinho de tres jeitos:
 1. TELA INICIAL: escolhido, o Android abre o jogo ao ligar na tomada, ao
    voltar do modo de espera e a cada HOME; se o jogo fechar ou cair, abre

@@ -1014,9 +1014,9 @@ function Conferir-Apk([string]$Apk) {
         foreach ($k in @("DragonInicioAtivo", "DragonLigou", "InicioDaTv", "Vigia", "AdbDaTv")) {
             if (-not $dex2.Contains("Lcom/lazersport/dragonbowling/$k;")) { throw "o APK ficou sem a $k (abrir ao ligar, classes2.dex)." }
         }
-        # o jogo pede a tela inicial como o Strike Kids, mas NUNCA a tela "Sobrepor a outros apps"
+        # o jogo pede "Sobrepor a outros apps" como um auto start (Android 10+) e a tela inicial como o Strike Kids
         if (-not $dex2.Contains("Landroid/app/role/RoleManager;")) { throw "o classes2.dex nao pede a tela inicial como o Strike Kids." }
-        if ($dex2.Contains("android.settings.action.MANAGE_OVERLAY_PERMISSION")) { throw "o classes2.dex abre a tela 'Sobrepor a outros apps': nao pode." }
+        if (-not $dex2.Contains("android.settings.action.MANAGE_OVERLAY_PERMISSION")) { throw "o classes2.dex nao pede 'Sobrepor a outros apps' como um auto start." }
         foreach ($d in @($nomes.Keys | Where-Object { $_ -match '^classes\d*\.dex$' })) {
             if ((Texto-Binario (Bytes-Do-Zip $z $d)).Contains("Lcom/lazersport/dragon/usbserial/")) { throw "o APK saiu com o plugin USB antigo ($d)." }
         }
@@ -1028,7 +1028,7 @@ function Conferir-Apk([string]$Apk) {
         if (-not $manifesto.Contains("com.lazersport.dragonbowling.TelaCheia")) { throw "o manifesto do APK nao abre a tela cheia (modelo errado?)." }
         # (o android.permission.DUMP do modelo oficial nao e pedido ao Android:
         # e quem pode chamar um receptor interno do androidx)
-        $permitidas = @("android.permission.DUMP", "android.permission.RECEIVE_BOOT_COMPLETED", "android.permission.SYSTEM_ALERT_WINDOW", "android.permission.INTERNET")
+        $permitidas = @("android.permission.DUMP", "android.permission.RECEIVE_BOOT_COMPLETED", "android.permission.SYSTEM_ALERT_WINDOW", "android.permission.INTERNET", "android.permission.WAKE_LOCK")
         $pedidas = @([Regex]::Matches($manifesto, 'android\.permission\.[A-Z_]+') | ForEach-Object { $_.Value } | Where-Object { $permitidas -notcontains $_ } | Select-Object -Unique)
         if ($pedidas.Count -gt 0) { throw "o APK pede permissao ($($pedidas -join ', ')): o Android faria perguntas." }
         if ($manifesto.Contains("android.hardware.usb.action.USB_DEVICE_ATTACHED")) { throw "o APK abre com o USB (plugin antigo?): o Android faria perguntas." }
@@ -1141,8 +1141,8 @@ function Principal {
     Write-Host "  SHA256:  $hash"
     Write-Host "  So a placa Zero Delay: o Android nao pergunta nada na instalacao." -ForegroundColor Green
     Write-Host "  ABRE SOZINHO AO LIGAR: o jeito garantido e o PREPARAR_TV.bat (PC na rede da TV)." -ForegroundColor Green
-    Write-Host "  Sem PC: ligue a Depuracao USB na TV, abra o jogo e deixe parado 20 s; ele se" -ForegroundColor Green
-    Write-Host "  prepara sozinho (aceite 'Permitir depuracao' / Sempre). Nunca mais pergunta." -ForegroundColor Green
+    Write-Host "  Sem PC: abra o jogo e deixe parado 20 s. Ele abre 'Sobrepor a outros apps':" -ForegroundColor Green
+    Write-Host "  deixe DRAGON BOWLING PERMITIDO e volte (como um auto start). Nunca mais pede." -ForegroundColor Green
     Write-Host "  So instala na memoria interna da TV (nunca no pendrive)." -ForegroundColor Green
     Write-Host "  1a VEZ COM ESTA CHAVE: desinstale da TV Box o Dragon Bowling antigo" -ForegroundColor Yellow
     Write-Host "  (Build 10 ou anterior, assinado com outra chave) e instale este." -ForegroundColor Yellow
@@ -1334,6 +1334,8 @@ function Preparar-Tv([string]$Apk, [switch]$SempreInstalar) {
     if ($sdk -ge 29) { [void](Adb @("shell", "cmd", "role", "add-role-holder", "android.app.role.HOME", $Pacote)) }
     if ($sdk -ge 23) {
         [void](Adb @("shell", "appops", "set", $Pacote, "SYSTEM_ALERT_WINDOW", "allow"))
+        # acender a tela ao ligar (Android 14 pede esta licenca para o alarme de acender)
+        [void](Adb @("shell", "appops", "set", $Pacote, "TURN_SCREEN_ON", "allow"))
         # fora da economia de energia (o Android nao "adormece" o jogo)
         [void](Adb @("shell", "dumpsys", "deviceidle", "whitelist", "+$Pacote"))
     }

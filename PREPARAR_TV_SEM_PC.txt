@@ -20,7 +20,7 @@ de cabo: celular e TV na mesma rede Wi-Fi. iPhone nao tem esse tipo de app.
 PREPARAR (o jogo vira a tela inicial, a tela do Google TV sai, TV sempre
 ligada):
 
-P=com.lazersport.dragonbowling.s905l; A=$P/com.lazersport.dragonbowling.DragonInicioAtivo; pm enable $A; cmd package set-home-activity $A; cmd role add-role-holder android.app.role.HOME $P; appops set $P SYSTEM_ALERT_WINDOW allow; settings put secure screensaver_enabled 0; settings put secure sleep_timeout -1; settings put secure attentive_timeout -1; if cmd package query-activities -a android.intent.action.MAIN -c android.intent.category.HOME | grep -q DragonInicioAtivo; then for L in com.google.android.apps.tv.launcherx com.google.android.tungsten.setupwraith; do pm disable-user --user 0 $L; done; echo TV PRONTA; else echo A TELA DO JOGO NAO LIGOU - NADA FOI DESLIGADO; fi; monkey -p $P -c android.intent.category.LAUNCHER 1
+P=com.lazersport.dragonbowling.s905l; A=$P/com.lazersport.dragonbowling.DragonInicioAtivo; pm enable $A; cmd package set-home-activity $A; cmd role add-role-holder android.app.role.HOME $P; appops set $P SYSTEM_ALERT_WINDOW allow; appops set $P TURN_SCREEN_ON allow; settings put secure screensaver_enabled 0; settings put secure sleep_timeout -1; settings put secure attentive_timeout -1; if cmd package query-activities -a android.intent.action.MAIN -c android.intent.category.HOME | grep -q DragonInicioAtivo; then for L in com.google.android.apps.tv.launcherx com.google.android.tungsten.setupwraith; do pm disable-user --user 0 $L; done; echo TV PRONTA; else echo A TELA DO JOGO NAO LIGOU - NADA FOI DESLIGADO; fi; monkey -p $P -c android.intent.category.LAUNCHER 1
 
 DEVOLVER (a TV volta a ser TV; o jogo continua instalado):
 

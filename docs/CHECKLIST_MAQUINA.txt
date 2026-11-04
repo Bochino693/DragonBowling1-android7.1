@@ -9,7 +9,8 @@ ninguem mexer. Este checklist garante isso. Faca na oficina, antes de levar.
     > Sistema > Energia: "Ligar quando a energia voltar" / "Modo de energia
     ao ligar" / "Power on mode" = LIGADA (ou "ultimo estado"). Sem essa
     opcao a TV nao serve para a maquina: alguem teria de ligar pelo
-    controle todo dia.
+    controle todo dia. (Skyworth SWTV-24SA-FHD: veja no LEIA-ME "A TV
+    LIGAR SOZINHA QUANDO A ENERGIA VOLTA".)
 
 2. INSTALACAO (uma vez por TV)
 [ ] Opcoes do desenvolvedor: Configuracoes > Sistema > Sobre > 7 cliques
@@ -19,10 +20,12 @@ ninguem mexer. Este checklist garante isso. Faca na oficina, antes de levar.
     da TV (o visualizador de USB da TV esconde os .apk), ou pelo PC com o
     PREPARAR_TV.bat. O Play Protect barrou ("desenvolvedor nao
     verificado")? Veja no LEIA-ME "INSTALAR NA TV GOOGLE".
-[ ] Abra o jogo pela lista de apps e deixe parado uns 20 s: ele se prepara
-    sozinho. Quando a TV perguntar "Permitir depuracao USB?", marque
-    "Sempre permitir" e OK. (Sem a Depuracao USB ele pede "Dragon Bowling
-    / Sempre": escolha.)
+[ ] Abra o jogo pela lista de apps e deixe parado uns 20 s: ele abre
+    "Sobrepor a outros apps" com um aviso. Deixe DRAGON BOWLING PERMITIDO e
+    aperte VOLTAR (como num app de auto start; nunca mais pede). Com a
+    Depuracao USB ligada, ele faz tudo sozinho: aceite "Permitir
+    depuracao" / Sempre.
+[ ] Desinstale (ou desligue) o app de auto start, se houver.
 [ ] SELECT (configuracao): a linha "ABRE SOZINHO AO LIGAR" diz SIM.
 [ ] Ainda no SELECT: aperte cada sensor e o START/moedeiro; "SINAL
     RECEBIDO" mostra o botao certo (montagem: docs\ZERO_DELAY_MONTAGEM.png).
