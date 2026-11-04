@@ -1,0 +1,56 @@
+CHECKLIST DA MAQUINA - DRAGON BOWLING (da instalacao ao dia a dia no buffet)
+============================================================================
+O proposito da maquina e um so: ligou, o jogo abre e roda o dia inteiro sem
+ninguem mexer. Este checklist garante isso. Faca na oficina, antes de levar.
+
+1. A TV CERTA (teste de 1 minuto, antes de montar)
+[ ] Tire a TV da tomada e ponha de novo, SEM tocar no controle: ela acende
+    sozinha? Se ficar apagada (so a luz vermelha), procure em Configuracoes
+    > Sistema > Energia: "Ligar quando a energia voltar" / "Modo de energia
+    ao ligar" / "Power on mode" = LIGADA (ou "ultimo estado"). Sem essa
+    opcao a TV nao serve para a maquina: alguem teria de ligar pelo
+    controle todo dia.
+
+2. INSTALACAO (uma vez por TV)
+[ ] Instale o APK: pendrive FAT32 + gerenciador de arquivos da Play Store
+    da TV (o visualizador de USB da TV esconde os .apk), ou pelo PC com o
+    PREPARAR_TV.bat (veja o LEIA-ME).
+[ ] Abra o jogo pela lista de apps e deixe parado uns 20 s. Quando o
+    Android perguntar, escolha DRAGON BOWLING e SEMPRE (ou aceite "Definir
+    como app de tela inicial"). Google TV que nao pergunta: PREPARAR_TV.bat
+    (PC) ou PREPARAR_TV_SEM_PC.txt (celular Android).
+[ ] SELECT (configuracao): a linha "ABRE SOZINHO AO LIGAR" diz SIM.
+[ ] Ainda no SELECT: aperte cada sensor e o START/moedeiro; "SINAL
+    RECEBIDO" mostra o botao certo (montagem: docs\ZERO_DELAY_MONTAGEM.png).
+[ ] TV: Configuracoes > Sistema > Energia: "Comportamento ao ligar" = TELA
+    INICIAL (nao "ultima entrada"/HDMI); "Desligar quando inativa"/"Eco"/
+    desligamento automatico = NUNCA; protetor de tela / modo ambiente =
+    DESLIGADO. (O PREPARAR_TV.bat ja desliga os dois ultimos.)
+[ ] Wi-Fi: com tudo pronto, ESQUECA a rede (Configuracoes > Rede > a rede >
+    Esquecer). O jogo nao usa internet. Sem ela a TV nao baixa atualizacao
+    do sistema no meio do dia, nao mostra avisos do Google nem propaganda,
+    e o Play Protect nao mexe no jogo. (Rede de novo so para usar o
+    PREPARAR_TV.bat pelo PC.)
+[ ] Teste final: tire a MAQUINA da tomada, espere 10 s, ligue: o jogo abre
+    sozinho, sem tocar em nada. Jogue uma partida inteira.
+[ ] Guarde o controle remoto da TV longe do publico.
+
+3. TODO DIA NO BUFFET
+- Ligar: so a chave (ou a tomada) da maquina. O jogo abre sozinho.
+- Desligar: pode desligar direto na chave, a qualquer hora. Recordes e
+  botoes sao gravados de um jeito que um corte de energia nao estraga.
+- Nada a configurar. Se o jogo travar, ele reinicia sozinho em menos de
+  1 minuto.
+
+4. SE ALGO DER ERRADO
+- Abriu a tela da TV em vez do jogo: HOME no controle > DRAGON BOWLING >
+  SEMPRE (ou o PREPARAR_TV.bat).
+- TV apagada ao ligar a maquina: a TV nao liga sozinha com a energia
+  (item 1).
+- Sensor ou botao fazendo a jogada errada: SELECT e configure na ordem
+  pedida.
+- Mexer na TV (ajustes, Wi-Fi): HOME 5 vezes seguidas; um HOME volta ao
+  jogo.
+- No SELECT aparece "O JOGO TRAVOU E VOLTOU SOZINHO: N VEZ(ES)": se esse
+  numero sobe todo dia, anote o numero e o modelo da TV e avise.
+- Atualizar o jogo: instale o APK novo POR CIMA (nunca desinstale antes).

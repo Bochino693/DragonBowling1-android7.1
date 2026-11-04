@@ -1011,7 +1011,7 @@ function Conferir-Apk([string]$Apk) {
         $dex2 = Texto-Binario (Bytes-Do-Zip $z "classes2.dex")
         if (-not $dex2.Contains("Lcom/lazersport/dragonbowling/TelaCheia;")) { throw "o APK ficou sem a atividade de tela cheia (classes2.dex)." }
         # o jogo abre sozinho ao ligar (o metodo do Strike Kids)
-        foreach ($k in @("DragonInicioAtivo", "DragonLigou", "InicioDaTv")) {
+        foreach ($k in @("DragonInicioAtivo", "DragonLigou", "InicioDaTv", "Vigia")) {
             if (-not $dex2.Contains("Lcom/lazersport/dragonbowling/$k;")) { throw "o APK ficou sem a $k (abrir ao ligar, classes2.dex)." }
         }
         # o jogo pede a tela inicial como o Strike Kids, mas NUNCA a tela "Sobrepor a outros apps"

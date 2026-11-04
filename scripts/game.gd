@@ -5743,7 +5743,7 @@ func _parar_musica_tela_final() -> void:
 func salvar_e_obter_status_recorde(total_derrubados: int, strikes: int) -> Dictionary:
 	var cfg: ConfigFile = ConfigFile.new()
 	var path: String = "user://dragon_bowling_save.cfg"
-	var err: int = cfg.load(path)
+	var err: int = Guardiao.carregar_seguro(cfg, path)
 
 	if err != OK:
 		cfg.set_value("records", "best_total", 0)
@@ -5764,7 +5764,7 @@ func salvar_e_obter_status_recorde(total_derrubados: int, strikes: int) -> Dicti
 
 	cfg.set_value("records", "best_total", best_total)
 	cfg.set_value("records", "best_strikes", best_strikes)
-	cfg.save(path)
+	Guardiao.gravar_seguro(cfg, path)
 
 	return {
 		"novo_recorde": novo_recorde,

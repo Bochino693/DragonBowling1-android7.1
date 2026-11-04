@@ -164,7 +164,7 @@ if tela is not None:
 dex2 = a.get_file('classes2.dex')
 checar(b'Landroid/app/role/RoleManager;' in dex2, 'classes2.dex pede a tela inicial como o Strike Kids (papel HOME)')
 checar(b'android.settings.action.MANAGE_OVERLAY_PERMISSION' not in dex2, 'classes2.dex nunca abre a tela "Sobrepor a outros apps"')
-for nome in ('DragonInicioAtivo', 'DragonLigou', 'InicioDaTv'):
+for nome in ('DragonInicioAtivo', 'DragonLigou', 'InicioDaTv', 'Vigia'):
     checar('Lcom/lazersport/dragonbowling/%s;' % nome in classes2, 'classes2.dex tem a ' + nome)
 checar(not any(k.startswith('Landroidx/') for k in classes2), 'classes2.dex sem androidx (o esqueleto não vazou)')
 outros = [n for n in arquivos if n.endswith('.dex') and n not in ('classes.dex', 'classes2.dex')]

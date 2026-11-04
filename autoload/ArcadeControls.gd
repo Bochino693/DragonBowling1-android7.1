@@ -176,7 +176,8 @@ func _desligar_acoes_de_interface() -> void:
 ## Um código por ação: >= 0 é botão de joystick; "tecla:<código>" é tecla.
 func _carregar() -> void:
 	var cfg := ConfigFile.new()
-	if cfg.load(ARQUIVO) != OK:
+	# (estragado por um corte de energia: vale a cópia de reserva)
+	if Guardiao.carregar_seguro(cfg, ARQUIVO) != OK:
 		return
 	var botoes = {}
 	var antigo = int(cfg.get_value("formato", "versao", 1)) < VERSAO_DO_ARQUIVO
@@ -202,7 +203,7 @@ func gravar(botoes: Dictionary) -> void:
 	cfg.set_value("formato", "versao", VERSAO_DO_ARQUIVO)
 	for acao in botoes:
 		cfg.set_value("botoes", acao, botoes[acao])
-	cfg.save(ARQUIVO)
+	Guardiao.gravar_seguro(cfg, ARQUIVO)
 	_aplicar(botoes)
 	_sem_conflito_na_configuracao()
 	mapeamento_gravado = true

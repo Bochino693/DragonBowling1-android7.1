@@ -1,4 +1,4 @@
-DRAGON BOWLING - TV BOX MALI-450 (ANDROID 7.1) - BUILD 15
+DRAGON BOWLING - TV BOX MALI-450 (ANDROID 7.1) - BUILD 16
 =========================================================
 
 PARA QUAL MAQUINA E ESTA VERSAO
@@ -42,6 +42,23 @@ desinstalar e sem perder nada.
 O pacote continua com.lazersport.dragonbowling.s905l (nao briga com a
 versao da Pro Ultra). O Android nao pergunta nada na instalacao (a unica
 permissao, a de abrir ao ligar, ele da sozinho).
+
+CHECKLIST DO TECNICO (da instalacao ao dia a dia no buffet):
+docs\CHECKLIST_MAQUINA.txt - a TV certa (liga sozinha quando a energia
+volta), instalacao, Wi-Fi esquecido, teste da tomada e o que fazer se algo
+der errado.
+
+NUNCA PARADA (BUILD 16)
+-----------------------
+1. O JOGO NUNCA FICA PARADO NA TELA: um vigia confere a cada 3 s se o jogo
+   esta desenhando e se o Android esta respondendo. Parado 45 s (com o
+   jogo na frente e passada a abertura), o jogo reinicia sozinho, do zero,
+   como ao ligar a TV. O SELECT mostra quantas vezes isso ja aconteceu
+   ("O JOGO TRAVOU E VOLTOU SOZINHO").
+2. DESLIGAR NA CHAVE NAO ESTRAGA NADA: recordes e botoes da Zero Delay sao
+   gravados num arquivo novo que so troca de lugar com o antigo quando
+   esta inteiro; o anterior fica de reserva (.bak). Um corte de energia no
+   meio da gravacao nao perde o mapeamento dos botoes.
 
 ABRE SOZINHO AO LIGAR (BUILD 15 - IGUAL AO STRIKE KIDS)
 ------------------------------------------------------

@@ -230,12 +230,14 @@ final class InicioDaTv {
 	/**
 	 * Para a tela de configuração do jogo (SELECT): user://inicio_tv.cfg, uma
 	 * linha "nome=valor" por item - tela_inicial (estado()), sobrepor (sim,
-	 * nao ou nao_precisa) e a versão do Android. Só grava: nada aparece.
+	 * nao ou nao_precisa), a versão do Android e quantas vezes o Vigia
+	 * reiniciou o jogo travado. Só grava: nada aparece.
 	 */
 	static void gravarEstado(Context c) {
 		String sobrepor = Build.VERSION.SDK_INT < 29 ? "nao_precisa" : (podeAbrirDeFundo(c) ? "sim" : "nao");
 		String texto = "tela_inicial=" + estado(c).replace('\n', ' ') + "\nsobrepor=" + sobrepor
-				+ "\nandroid=" + Build.VERSION.RELEASE + "\nsdk=" + Build.VERSION.SDK_INT + "\n";
+				+ "\nandroid=" + Build.VERSION.RELEASE + "\nsdk=" + Build.VERSION.SDK_INT
+				+ "\nvigia=" + Vigia.reinicios(c) + "\n";
 		File arquivo = new File(c.getFilesDir(), "inicio_tv.cfg");
 		FileOutputStream saida = null;
 		try {

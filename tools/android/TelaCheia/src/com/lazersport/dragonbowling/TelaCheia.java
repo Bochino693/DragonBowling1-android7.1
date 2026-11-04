@@ -17,6 +17,7 @@ import android.view.WindowInsets;
 import android.view.WindowManager;
 
 import org.godotengine.godot.FullScreenGodotApp;
+import org.godotengine.godot.Godot;
 
 /**
  * A ATIVIDADE DO DRAGON BOWLING NA TV BOX (no lugar da com.godot.game.GodotApp
@@ -39,6 +40,8 @@ import org.godotengine.godot.FullScreenGodotApp;
  * Bowling" + SEMPRE) uma vez a cada abertura, com o jogo parado; escolhido
  * uma vez, nunca mais pede. Não pede se o PREPARAR_TV.bat -DevolverTv
  * desligou a tela inicial do jogo.
+ *
+ * O JOGO NUNCA FICA PARADO NA TELA: o Vigia reinicia o jogo travado.
  *
  * Feito por tools/android/TelaCheia/construir.sh (Java 8, sem Gradle).
  */
@@ -133,6 +136,7 @@ public class TelaCheia extends FullScreenGodotApp {
 	@Override
 	protected void onResume() {
 		super.onResume();
+		Vigia.naFrente(this);
 		telaCheia();
 		// (de volta dos ajustes do Android: a configuração já mostra o novo estado)
 		relogio.post(gravarEstado);
@@ -144,8 +148,26 @@ public class TelaCheia extends FullScreenGodotApp {
 
 	@Override
 	protected void onPause() {
+		// antes do Godot parar de desenhar: fora da frente, o vigia não vigia
+		Vigia.foraDaFrente();
 		relogio.removeCallbacks(pedirTelaInicial);
 		super.onPause();
+	}
+
+	@Override
+	public void onDestroy() {
+		Vigia.acabou(this);
+		super.onDestroy();
+	}
+
+	/** Para o Vigia: r só roda quando o Godot desenhar o próximo quadro. */
+	void naFilaDoDesenho(Runnable r) {
+		Godot godot = getGodotFragment();
+		if (godot == null) {
+			r.run();
+			return;
+		}
+		godot.runOnRenderThread(r);
 	}
 
 	/**
