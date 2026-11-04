@@ -13,8 +13,12 @@
     [switch]$PrepararTv,
     # IP da TV na rede (adb pela rede; sem ele, a TV ja ligada no adb ou pergunta)
     [string]$Ip = "",
-    # desliga as outras telas iniciais (a da TV): so o jogo abre ao ligar
+    # (antigo: agora e o padrao do PREPARAR_TV - so o jogo abre ao ligar)
     [switch]$SoOJogo,
+    # PREPARAR_TV sem desligar a tela inicial da TV (nao recomendado no Google TV)
+    [switch]$ManterTelaDaTv,
+    # desfaz o PREPARAR_TV: religa a tela inicial da TV (o jogo continua instalado)
+    [switch]$DevolverTv,
     # Depuracao por Wi-Fi (Android 11+): "IP:porta" e o codigo da tela "Parear"
     [string]$Parear = "",
     [string]$Codigo = ""
@@ -1046,8 +1050,8 @@ function Conferir-Apk([string]$Apk) {
 
 function Principal {
     Write-Host "============================================================" -ForegroundColor Cyan
-    if ($PrepararTv) {
-        Write-Host " DRAGON BOWLING - PREPARAR A TV (adb): instalar e abrir ao ligar" -ForegroundColor Cyan
+    if ($PrepararTv -or $DevolverTv) {
+        Write-Host " DRAGON BOWLING - PREPARAR A TV (adb): so o jogo, sempre ligado" -ForegroundColor Cyan
     } else {
         Write-Host " DRAGON BOWLING - GERAR APK DA TV BOX (MALI-450)" -ForegroundColor Cyan
     }
@@ -1067,8 +1071,9 @@ function Principal {
         if (-not (Test-Path -LiteralPath (Join-Path $Projeto $f))) { throw "falta $f no projeto (extraia o ZIP inteiro)." }
     }
     if (-not [Environment]::Is64BitOperatingSystem) { throw "este gerador precisa do Windows 64 bits." }
-    if ($Instalar) { $script:TotalEtapas = 13 }
-    if ($PrepararTv) { $script:TotalEtapas = 6 }
+    if ($Instalar) { $script:TotalEtapas = 14 }
+    if ($PrepararTv) { $script:TotalEtapas = 7 }
+    if ($DevolverTv) { $script:TotalEtapas = 4 }
 
     Titulo "Pasta de trabalho"
     $script:Trabalho = Escolher-Trabalho
@@ -1084,10 +1089,10 @@ function Principal {
         if ($livre -lt 3GB) { Aviso "pouco espaco: a 1a geracao precisa de uns 2 GB (Godot, Java, modelo, importacao)." }
     } catch { }
 
-    if ($PrepararTv) {
+    if ($PrepararTv -or $DevolverTv) {
         Titulo "adb (Android platform-tools)"
         Garantir-Adb
-        Preparar-Tv (Join-Path (Join-Path $Projeto "APK-Pronto") $NomeApk)
+        if ($DevolverTv) { Devolver-Tv } else { Preparar-Tv (Join-Path (Join-Path $Projeto "APK-Pronto") $NomeApk) }
         return
     }
 
@@ -1148,7 +1153,7 @@ function Principal {
 
     if ($Instalar) {
         # o mesmo do PREPARAR_TV.bat: instala, tela inicial, sobrepor, confere
-        Preparar-Tv $final
+        Preparar-Tv $final -SempreInstalar
     }
 }
 
@@ -1158,12 +1163,19 @@ function Principal {
 # PC" do Strike Kids (GERAR_APK.bat -TelaInicial), completo. Pelo adb, na
 # TV (placa da TV ou TV Box, Android 7.1 a 14) com a depuracao ligada:
 #  - instala o jogo (so na memoria interna: o APK nao deixa ir para pendrive)
-#    e abre uma vez (o Android so avisa "ligou" a um app ja aberto);
+#    - ou, se ele ja esta na TV (pendrive), nao mexe - e abre uma vez (o
+#    Android so avisa "ligou" a um app ja aberto);
 #  - o jogo vira a TELA INICIAL (abre ao ligar, ao voltar da espera e a cada
-#    HOME) - inclusive no Android TV, que nao deixa trocar pelos ajustes;
+#    HOME) e as outras telas iniciais da TV sao DESLIGADAS: no Google TV a
+#    tela do Google TV (launcherx) nao aceita ser trocada, e o assistente de
+#    configuracao (setupwraith) a religaria no boot - os dois saem. So depois
+#    de conferir que a tela inicial do jogo esta ligada (sem nenhuma, a TV nao
+#    abriria nada). O que foi desligado fica anotado na TV: -DevolverTv religa;
 #  - "Sobrepor a outros apps" permitido: no Android 10+ e o que deixa o aviso
 #    de "ligou" abrir o jogo (a segunda garantia);
-#  - -SoOJogo: desliga as outras telas iniciais (a da TV): so sobra o jogo;
+#  - TV SEMPRE LIGADA: sem descanso de tela (modo ambiente) e sem o
+#    "desligar por inatividade" (que mostra um aviso e apaga a TV depois de
+#    horas sem ninguem mexer no controle remoto);
 #  - confere tudo e mostra SIM/NAO de cada item.
 # Na TV nada e perguntado, menos na 1a conexao: "Permitir depuracao?".
 
@@ -1239,27 +1251,67 @@ function Instalar-Na-Tv([string]$Apk) {
     throw "o adb nao instalou (codigo $cod; veja adb-instalar.log)."
 }
 
-function Preparar-Tv([string]$Apk) {
-    if (-not (Test-Path -LiteralPath $Apk)) { throw "falta o APK: $Apk (gere com o GERAR_APK_AGORA.bat ou copie o APK pronto para APK-Pronto)." }
+# A versao do jogo na TV (versionCode; 0 = nao instalado).
+function Versao-Na-Tv {
+    $m = [Regex]::Match((Adb @("shell", "dumpsys", "package", $Pacote)), 'versionCode=(\d+)')
+    if ($m.Success) { return [int]$m.Groups[1].Value }
+    return 0
+}
+
+# A versao do APK pronto: a do export_presets.cfg (o GERAR_APK gera com ela).
+function Versao-Do-Projeto {
+    $m = [Regex]::Match([IO.File]::ReadAllText((Join-Path $Projeto "export_presets.cfg")), '(?m)^version/code=(\d+)')
+    if ($m.Success) { return [int]$m.Groups[1].Value }
+    return 0
+}
+
+# As telas da TV que saem (o Google TV religaria a dele pelo setupwraith) e
+# onde a lista do que foi desligado fica anotada na TV (para o -DevolverTv).
+$TelasDoGoogleTv = @("com.google.android.apps.tv.launcherx", "com.google.android.tungsten.setupwraith", "com.google.android.tvlauncher")
+$ListaNaTv = "/data/local/tmp/dragonbowling_telas_desligadas.txt"
+
+function Instalado-Na-Tv([string]$P) {
+    return (Adb @("shell", "pm", "list", "packages", $P)) -match ("(?m)^package:" + [Regex]::Escape($P) + "\r?$")
+}
+
+# Todas as telas iniciais da TV menos o jogo e os Ajustes (a tela do comeco
+# do boot), mais as do Google TV que estiverem instaladas.
+function Outras-Telas-Iniciais {
+    $lista = @((Adb @("shell", "cmd", "package", "query-activities", "--brief", "-a", "android.intent.action.MAIN", "-c", "android.intent.category.HOME")) -split "`r?`n" |
+        ForEach-Object { $_.Trim() } | Where-Object { $_ -match '^[A-Za-z0-9_.]+/' } | ForEach-Object { ($_ -split '/')[0] })
+    foreach ($p in $TelasDoGoogleTv) { if (Instalado-Na-Tv $p) { $lista += $p } }
+    return @($lista | Where-Object { $_ -and $_ -ne $Pacote -and $_ -ne "android" -and $_ -notmatch '^com\.android\.(tv\.)?settings$' } | Select-Object -Unique)
+}
+
+function Preparar-Tv([string]$Apk, [switch]$SempreInstalar) {
     Titulo "TV no adb"
     Ligar-Tv
-
-    Titulo "Instalando o jogo na memoria interna"
-    Instalar-Na-Tv $Apk
     $sdk = 0
     [void][int]::TryParse((Adb @("shell", "getprop", "ro.build.version.sdk")), [ref]$sdk)
     $versao = Adb @("shell", "getprop", "ro.build.version.release")
-    Info "Android $versao (API $sdk)"
+    $googleTv = Instalado-Na-Tv "com.google.android.apps.tv.launcherx"
+    Info ("Android $versao (API $sdk)" + $(if ($googleTv) { " - Google TV" } else { "" }))
+
+    Titulo "O jogo na memoria interna"
+    $naTv = Versao-Na-Tv
+    $temApk = $Apk -and (Test-Path -LiteralPath $Apk)
+    if ($temApk -and ($SempreInstalar -or $naTv -eq 0 -or (Versao-Do-Projeto) -gt $naTv)) {
+        Instalar-Na-Tv $Apk
+    } elseif ($naTv -gt 0) {
+        Ok "o jogo ja esta na TV (versao $naTv): fica como esta"
+    } else {
+        throw "o jogo nao esta na TV e falta o APK em APK-Pronto: gere com o GERAR_APK_AGORA.bat (ou instale o APK pelo pendrive) e rode de novo."
+    }
     $caminho = Adb @("shell", "pm", "path", $Pacote)
     if ($caminho -match '/mnt/expand/') {
-        Aviso "o jogo ficou num pendrive/cartao formatado como memoria da TV: desinstale e instale de novo."
+        Aviso "o jogo esta num pendrive/cartao formatado como memoria da TV: desinstale e instale de novo (a build 13 em diante so vai para a memoria interna)."
     } elseif ($caminho -match 'package:/data/') {
         Ok "na memoria interna da TV"
     }
     # aberto uma vez: o Android so avisa "ligou" a um app que ja foi aberto
     [void](Adb @("shell", "monkey", "-p", $Pacote, "-c", "android.intent.category.LAUNCHER", "1"))
 
-    Titulo "Abrir sozinho ao ligar"
+    Titulo "So o jogo ao ligar"
     # a tela inicial do jogo vem DESLIGADA no APK (sem a janela "qual tela
     # inicial usar" ao ligar): aqui ela e ligada e ja escolhida, sem janela
     [void](Adb @("shell", "pm", "enable", "$Pacote/$InicioAtivo"))
@@ -1270,17 +1322,39 @@ function Preparar-Tv([string]$Apk) {
         # fora da economia de energia (o Android nao "adormece" o jogo)
         [void](Adb @("shell", "dumpsys", "deviceidle", "whitelist", "+$Pacote"))
     }
+    $candidatas = Adb @("shell", "cmd", "package", "query-activities", "--brief", "-a", "android.intent.action.MAIN", "-c", "android.intent.category.HOME")
+    $nossaLigada = $candidatas -match ([Regex]::Escape("$Pacote/") + "\S*DragonInicioAtivo")
     $desligadas = @()
-    if ($SoOJogo) {
-        $outras = @((Adb @("shell", "cmd", "package", "query-activities", "--brief", "-a", "android.intent.action.MAIN", "-c", "android.intent.category.HOME")) -split "`r?`n" |
-            ForEach-Object { $_.Trim() } | Where-Object { $_ -match '^[A-Za-z0-9_.]+/' } | ForEach-Object { ($_ -split '/')[0] } | Select-Object -Unique)
-        foreach ($p in $outras) {
-            # os Ajustes (a tela de inicio do comeco do boot) nunca
-            if ($p -eq $Pacote -or $p -match '^com\.android\.(tv\.)?settings$') { continue }
+    if ($ManterTelaDaTv) {
+        Info "-ManterTelaDaTv: a tela inicial da TV continua ligada."
+    } elseif (-not $nossaLigada) {
+        Aviso "a tela inicial do jogo nao ligou: a da TV NAO foi desligada (sem nenhuma, a TV nao abriria nada)."
+    } else {
+        foreach ($p in (Outras-Telas-Iniciais)) {
             $r = Adb @("shell", "pm", "disable-user", "--user", "0", $p)
-            if ($r -match 'disabled') { $desligadas += $p; Ok "tela inicial da TV desligada: $p" } else { Aviso "nao desliguei $p ($r)" }
+            if ($r -match 'disabled') {
+                $desligadas += $p
+                [void](Adb @("shell", "echo $p >> $ListaNaTv"))
+                Ok "tela da TV desligada: $p"
+            } else {
+                Aviso "nao desliguei $p ($r)"
+            }
         }
     }
+
+    Titulo "TV sempre ligada"
+    # sem descanso de tela (o "modo ambiente" do Google TV) e sem o desligar
+    # por inatividade (aviso na tela e TV apagada depois de horas sem controle)
+    $ajustes = @(@("secure", "screensaver_enabled", "0"), @("secure", "screensaver_activate_on_sleep", "0"),
+        @("secure", "screensaver_activate_on_dock", "0"), @("secure", "sleep_timeout", "-1"),
+        @("system", "screen_off_timeout", "2147483647"))
+    if ($sdk -ge 29) { $ajustes += , @("secure", "attentive_timeout", "-1") }
+    foreach ($a in $ajustes) { [void](Adb @("shell", "settings", "put", $a[0], $a[1], $a[2])) }
+    $semDescanso = (Adb @("shell", "settings", "get", "secure", "screensaver_enabled")) -eq "0"
+    $semDesligar = (Adb @("shell", "settings", "get", "secure", "sleep_timeout")) -eq "-1"
+    if ($sdk -ge 29) { $semDesligar = $semDesligar -and ((Adb @("shell", "settings", "get", "secure", "attentive_timeout")) -eq "-1") }
+    if ($semDescanso) { Ok "sem descanso de tela (modo ambiente)" } else { Aviso "a TV nao aceitou desligar o descanso de tela." }
+    if ($semDesligar) { Ok "sem desligar por inatividade" } else { Aviso "a TV nao aceitou desligar o 'desligar por inatividade'." }
 
     Titulo "Conferindo"
     $casa = Adb @("shell", "cmd", "package", "resolve-activity", "--brief", "-a", "android.intent.action.MAIN", "-c", "android.intent.category.HOME")
@@ -1289,10 +1363,20 @@ function Preparar-Tv([string]$Apk) {
     if (-not $ehCasa -and $sdk -ge 29) { $ehCasa = (Adb @("shell", "cmd", "role", "get-role-holders", "android.app.role.HOME")) -match [Regex]::Escape($Pacote) }
     $sobrepor = $true
     if ($sdk -ge 29) { $sobrepor = (Adb @("shell", "appops", "get", $Pacote, "SYSTEM_ALERT_WINDOW")) -match 'allow' }
+    $outrasLigadas = @()
+    if (-not $ManterTelaDaTv) {
+        $desligadosNaTv = Adb @("shell", "pm", "list", "packages", "-d")
+        $outrasLigadas = @(Outras-Telas-Iniciais | Where-Object { $desligadosNaTv -notmatch ("(?m)^package:" + [Regex]::Escape($_) + "\r?$") })
+    }
     if ($ehCasa) {
         Ok "TELA INICIAL: o jogo (abre ao ligar, ao voltar da espera e a cada HOME)"
     } else {
-        Aviso "a TV nao aceitou o jogo como tela inicial ($($ultima -join ' | ')). Tente PREPARAR_TV.bat -SoOJogo."
+        Aviso "a TV nao aceitou o jogo como tela inicial ($($ultima -join ' | '))."
+    }
+    if ($outrasLigadas.Count -eq 0 -and -not $ManterTelaDaTv) {
+        Ok "nenhuma outra tela inicial ligada: so o jogo abre"
+    } elseif (-not $ManterTelaDaTv) {
+        Aviso "ainda ligadas: $($outrasLigadas -join ', ')"
     }
     if ($sdk -ge 29 -and $sobrepor) {
         Ok "SOBREPOR A OUTROS APPS: permitido (o aviso de 'ligou' abre o jogo)"
@@ -1301,14 +1385,35 @@ function Preparar-Tv([string]$Apk) {
     }
     [void](Adb @("shell", "monkey", "-p", $Pacote, "-c", "android.intent.category.LAUNCHER", "1"))
     Write-Host ""
-    if ($ehCasa -or ($sdk -ge 29 -and $sobrepor) -or $sdk -lt 29) {
-        Write-Host "TV PRONTA: o Dragon Bowling abre sozinho ao ligar." -ForegroundColor Green
+    $pronta = $ehCasa -and ($ManterTelaDaTv -or $outrasLigadas.Count -eq 0)
+    if ($pronta) {
+        Write-Host "TV PRONTA: ao ligar, a TV abre SO o Dragon Bowling." -ForegroundColor Green
     } else {
-        Write-Host "TV AINDA NAO ABRE O JOGO SOZINHA: veja os avisos acima." -ForegroundColor Yellow
+        Write-Host "TV AINDA NAO ESTA PRONTA: veja os avisos acima e envie build\android\GERACAO-COMPLETA.log." -ForegroundColor Yellow
     }
     Write-Host "  Confira: tire a TV da tomada, espere 10 s e ligue - o jogo abre sozinho."
-    Write-Host "  Para usar a TV (ajustes, outros apps): HOME 5 vezes seguidas; um HOME volta ao jogo."
-    foreach ($p in $desligadas) { Write-Host "  Para religar a tela inicial da TV: adb shell pm enable $p" }
+    Write-Host "  Para usar a TV (ajustes): HOME 5 vezes seguidas no controle remoto; um HOME volta ao jogo."
+    Write-Host "  Para a TV voltar a ser TV: PREPARAR_TV.bat -DevolverTv"
+    if ($script:PelaRede) { [void](Saida-De $script:Adb @("disconnect", $script:Serial) 15) }
+}
+
+# PREPARAR_TV.bat -DevolverTv: a TV volta a abrir a propria tela inicial (as
+# telas desligadas sao religadas e a do jogo e desligada). O jogo continua
+# instalado e abre pela lista de apps.
+function Devolver-Tv {
+    Titulo "TV no adb"
+    Ligar-Tv
+    Titulo "Religando a tela inicial da TV"
+    $lista = @((Adb @("shell", "cat", $ListaNaTv)) -split "`r?`n" | ForEach-Object { $_.Trim() } | Where-Object { $_ -match '^[A-Za-z0-9_.]+$' })
+    foreach ($p in $TelasDoGoogleTv) { if (Instalado-Na-Tv $p) { $lista += $p } }
+    foreach ($p in @($lista | Select-Object -Unique)) {
+        $r = Adb @("shell", "pm", "enable", $p)
+        if ($r -match 'enabled') { Ok "religada: $p" } else { Aviso "nao religuei $p ($r)" }
+    }
+    [void](Adb @("shell", "pm", "disable", "$Pacote/$InicioAtivo"))
+    [void](Adb @("shell", "rm", "-f", $ListaNaTv))
+    Write-Host ""
+    Write-Host "PRONTO: a TV voltou a abrir a propria tela inicial (o Dragon Bowling continua instalado)." -ForegroundColor Green
     if ($script:PelaRede) { [void](Saida-De $script:Adb @("disconnect", $script:Serial) 15) }
 }
 
