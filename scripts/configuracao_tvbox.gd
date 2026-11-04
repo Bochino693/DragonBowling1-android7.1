@@ -109,8 +109,8 @@ func _abre_ao_ligar(fonte: Font) -> void:
 		var adb: String = estado.get("adb", "")
 		if adb == "sem_permissao":
 			dica = "ACEITE \"PERMITIR DEPURAÇÃO\" NA TV (MARQUE SEMPRE) - DESLIGUE E LIGUE"
-		elif adb == "adb_desligado" or adb == "":
-			dica = "LIGUE A DEPURAÇÃO USB (OPÇÕES DO DESENVOLVEDOR) E ABRA O JOGO"
+		elif sobrepor == "nao":
+			dica = "DEIXE O JOGO PARADO 20 s E PERMITA DRAGON BOWLING EM \"SOBREPOR\""
 		else:
 			dica = "DEIXE O JOGO PARADO 20 s E ESCOLHA DRAGON BOWLING > SEMPRE (OU HOME)"
 		cor = Color(1.0, 0.45, 0.35)

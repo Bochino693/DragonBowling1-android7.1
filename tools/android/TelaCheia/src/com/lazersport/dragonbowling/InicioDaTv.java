@@ -16,9 +16,11 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.PowerManager;
 import android.os.SystemClock;
 import android.provider.Settings;
 import android.util.Log;
+import android.widget.Toast;
 
 import org.godotengine.godot.utils.ProcessPhoenix;
 
@@ -372,6 +374,54 @@ final class InicioDaTv {
 			return Settings.canDrawOverlays(c);
 		} catch (Throwable t) {
 			return false;
+		}
+	}
+
+	/**
+	 * O "SOBREPOR A OUTROS APPS", COMO UM APP DE AUTO START PEDE: abre a tela do
+	 * Android já no Dragon Bowling (ou a lista) com um aviso de o que fazer.
+	 * Permitido uma vez, o aviso de "ligou" (DragonLigou) abre o jogo sempre
+	 * que a TV liga - e nunca mais pede. false se a TV não tem essa tela.
+	 */
+	static boolean pedirSobrepor(final Activity a) {
+		final String aviso = "PARA O JOGO ABRIR SOZINHO AO LIGAR A TV: deixe DRAGON BOWLING "
+				+ "PERMITIDO (ligado) e aperte VOLTAR. É só desta vez.";
+		boolean abriu = abrir(a, new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:" + a.getPackageName())))
+				|| abrir(a, new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION));
+		if (abriu) {
+			try {
+				// o aviso fica por cima da tela do Android (duas vezes: uns 7 s)
+				Toast.makeText(a.getApplicationContext(), aviso, Toast.LENGTH_LONG).show();
+				new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
+					@Override
+					public void run() {
+						Toast.makeText(a.getApplicationContext(), aviso, Toast.LENGTH_LONG).show();
+					}
+				}, 3500);
+			} catch (Throwable ignored) {
+			}
+		}
+		return abriu;
+	}
+
+	/**
+	 * ACENDE A TELA DA TV ao ligar: se o Android ligou com a tela apagada (TV
+	 * em espera com a placa ligada), o jogo a acende, como um aviso de alarme.
+	 * Se a TV ficou desligada de verdade (só a luz vermelha), nada a fazer por
+	 * aqui: é o ajuste da TV de ligar quando a energia volta.
+	 */
+	@SuppressWarnings("deprecation")
+	static void acenderTela(Context c) {
+		try {
+			PowerManager pm = (PowerManager) c.getSystemService(Context.POWER_SERVICE);
+			if (pm == null) {
+				return;
+			}
+			PowerManager.WakeLock luz = pm.newWakeLock(PowerManager.SCREEN_BRIGHT_WAKE_LOCK
+					| PowerManager.ACQUIRE_CAUSES_WAKEUP | PowerManager.ON_AFTER_RELEASE, "DragonBowling:ligou");
+			luz.acquire(20000);
+		} catch (Throwable t) {
+			Log.i(TAG, "inicio: acender a tela: " + t);
 		}
 	}
 

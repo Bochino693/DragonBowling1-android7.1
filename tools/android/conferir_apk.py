@@ -32,6 +32,7 @@ LIGOU = 'com.lazersport.dragonbowling.DragonLigou'
 PERMISSAO_LIGOU = 'android.permission.RECEIVE_BOOT_COMPLETED'
 PERMISSAO_SOBREPOR = 'android.permission.SYSTEM_ALERT_WINDOW'
 PERMISSAO_REDE = 'android.permission.INTERNET'
+PERMISSAO_ACENDER = 'android.permission.WAKE_LOCK'
 ABIS = ['arm64-v8a', 'armeabi-v7a']
 CATEGORIAS = ['android.intent.category.LAUNCHER', 'android.intent.category.LEANBACK_LAUNCHER']
 
@@ -67,7 +68,8 @@ if CERTIFICADO:
 # deixa esse aviso abrir o jogo. O jogo usa só a placa Zero Delay
 perms = sorted(a.get_permissions())
 print('permissões:', perms)
-checar(perms == sorted([PERMISSAO_LIGOU, PERMISSAO_SOBREPOR, PERMISSAO_REDE]), 'só INTERNET (adb da própria TV), RECEIVE_BOOT_COMPLETED e SYSTEM_ALERT_WINDOW')
+checar(perms == sorted([PERMISSAO_LIGOU, PERMISSAO_SOBREPOR, PERMISSAO_REDE, PERMISSAO_ACENDER]),
+       'só INTERNET (adb da própria TV), RECEIVE_BOOT_COMPLETED, SYSTEM_ALERT_WINDOW e WAKE_LOCK')
 # o jogo SÓ na memória interna (nunca num pendrive ou cartão, de onde sumiria)
 local = m.get(NS + 'installLocation')
 checar(local in ('1', 'internalOnly'), 'só na memória interna (installLocation = %s)' % local)
@@ -160,11 +162,11 @@ if tela is not None:
     metodos = {mt.get_name() for mt in tela.get_methods()}
     for nome in ('onCreate', 'onResume', 'onWindowFocusChanged'):
         checar(nome in metodos, '   TelaCheia.%s' % nome)
-# o jogo pede a tela inicial como o Strike Kids (papel HOME, ajustes da tela
-# inicial ou a escolha "Sempre") - mas NUNCA a tela "Sobrepor a outros apps"
+# o jogo pede, na instalação, o "Sobrepor a outros apps" como um app de auto
+# start (Android 10+) e a tela inicial como o Strike Kids (TV Box 7.1)
 dex2 = a.get_file('classes2.dex')
 checar(b'Landroid/app/role/RoleManager;' in dex2, 'classes2.dex pede a tela inicial como o Strike Kids (papel HOME)')
-checar(b'android.settings.action.MANAGE_OVERLAY_PERMISSION' not in dex2, 'classes2.dex nunca abre a tela "Sobrepor a outros apps"')
+checar(b'android.settings.action.MANAGE_OVERLAY_PERMISSION' in dex2, 'classes2.dex pede "Sobrepor a outros apps" como um auto start')
 for nome in ('DragonInicioAtivo', 'DragonLigou', 'InicioDaTv', 'Vigia', 'AdbDaTv'):
     checar('Lcom/lazersport/dragonbowling/%s;' % nome in classes2, 'classes2.dex tem a ' + nome)
 checar(not any(k.startswith('Landroidx/') for k in classes2), 'classes2.dex sem androidx (o esqueleto não vazou)')

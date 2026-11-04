@@ -113,7 +113,19 @@ public class TelaCheia extends FullScreenGodotApp {
 			try {
 				InicioDaTv.gravarEstado(TelaCheia.this);
 				String estado = InicioDaTv.estado(TelaCheia.this);
-				if (!isFinishing() && !estado.equals("jogo") && InicioDaTv.telaDoJogoLigada(TelaCheia.this)) {
+				if (isFinishing() || estado.equals("jogo") || !InicioDaTv.telaDoJogoLigada(TelaCheia.this)) {
+					return;
+				}
+				if (Build.VERSION.SDK_INT >= 29) {
+					// Android 10+ (Google TV): como um app de auto start, o
+					// "Sobrepor a outros apps" - permitido uma vez, nunca mais pede
+					if (!InicioDaTv.podeAbrirDeFundo(TelaCheia.this)) {
+						Log.i("DragonBowling", "inicio: pedindo 'Sobrepor a outros apps': "
+								+ InicioDaTv.pedirSobrepor(TelaCheia.this));
+					}
+				} else {
+					// TV Box Android 7.1: o aviso de "ligou" já abre o jogo; e,
+					// como o Strike Kids, o pedido da tela inicial
 					Log.i("DragonBowling", "inicio: a TV ainda não abre o jogo (" + estado + "): "
 							+ InicioDaTv.escolher(TelaCheia.this, true));
 				}
@@ -145,6 +157,7 @@ public class TelaCheia extends FullScreenGodotApp {
 		}
 		super.onCreate(savedInstanceState);
 		getWindow().addFlags(JANELA_INTEIRA | WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+		acenderTela();
 		getWindow().setBackgroundDrawable(new ColorDrawable(Color.BLACK));
 		View area = areaDoJogo();
 		if (area != null) {
@@ -230,6 +243,27 @@ public class TelaCheia extends FullScreenGodotApp {
 		super.onWindowFocusChanged(hasFocus);
 		if (hasFocus) {
 			telaCheia();
+		}
+	}
+
+	/**
+	 * Ao abrir, acende a tela da TV se ela estiver apagada (aberto pelo aviso
+	 * de "ligou" com o Android ligado e a tela apagada) e passa por cima de
+	 * qualquer tela de bloqueio.
+	 */
+	@SuppressWarnings("deprecation")
+	private void acenderTela() {
+		try {
+			if (Build.VERSION.SDK_INT >= 27) {
+				setTurnScreenOn(true);
+				setShowWhenLocked(true);
+			} else {
+				getWindow().addFlags(WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
+						| WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED
+						| WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD);
+			}
+		} catch (Throwable t) {
+			Log.i("DragonBowling", "acender a tela: " + t);
 		}
 	}
 
